@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
-import { TrackerRepository } from '../repositories/tracker.repository';
-import { RssService } from '../services/rss.service';
+import { TrackerService } from '../services/tracker.service';
 import { TRACKERS } from '../trackers/definitions';
-import { calculateNextRun } from '../utils/cron.utils';
 
 const VALID_SCHEDULES = [
   { value: '*/30 * * * *', label: 'Every 30 minutes' },
@@ -14,12 +12,10 @@ const VALID_SCHEDULES = [
 ];
 
 export class TrackerController {
-  private readonly repository: TrackerRepository;
-  private readonly rssService: RssService;
+  private readonly trackerService: TrackerService;
 
-  constructor(rssService: RssService) {
-    this.repository = new TrackerRepository();
-    this.rssService = rssService;
+  constructor(trackerService: TrackerService) {
+    this.trackerService = trackerService;
 
     this.getSchedules = this.getSchedules.bind(this);
     this.getDefinitions = this.getDefinitions.bind(this);
@@ -40,16 +36,7 @@ export class TrackerController {
 
   public async getAllTrackers(req: Request, res: Response) {
     try {
-      const trackers = await this.repository.getAllTrackers();
-
-      const mappedTrackers = trackers.map((t) => {
-        const nextRun = calculateNextRun(t.lastRun, t.cronSchedule);
-
-        return {
-          ...t,
-          nextRun,
-        };
-      });
+      const mappedTrackers = await this.trackerService.getAllTrackers();
 
       res.json(mappedTrackers);
     } catch (error) {
@@ -77,15 +64,11 @@ export class TrackerController {
         finalSchedule = '*/30 * * * *';
       }
 
-      const newTracker = await this.repository.createTracker({
+      const newTracker = await this.trackerService.createTracker({
         name: name || def.name,
         url: url,
         cronSchedule: finalSchedule,
       });
-
-      if (newTracker.active) {
-        this.rssService.startTrackerCron(newTracker);
-      }
 
       res.status(201).json(newTracker);
     } catch {
@@ -96,8 +79,7 @@ export class TrackerController {
   public async deleteTracker(req: Request, res: Response) {
     try {
       const id = Number.parseInt(req.params.id as string, 10);
-      await this.repository.deleteTracker(id);
-      this.rssService.stopTrackerCron(id);
+      await this.trackerService.deleteTracker(id);
       res.status(204).send();
     } catch {
       res.status(500).json({ error: 'Failed to delete tracker' });
@@ -114,11 +96,7 @@ export class TrackerController {
         finalSchedule = '*/30 * * * *';
       }
 
-      const updated = await this.repository.updateTracker(id, url, finalSchedule, name);
-
-      if (updated.active) {
-        this.rssService.startTrackerCron(updated);
-      }
+      const updated = await this.trackerService.updateTracker(id, url, finalSchedule, name);
 
       res.json(updated);
     } catch {
@@ -130,13 +108,7 @@ export class TrackerController {
     try {
       const id = Number.parseInt(req.params.id as string, 10);
       const active = req.body.active;
-      const updated = await this.repository.toggleTracker(id, active);
-
-      if (updated.active) {
-        this.rssService.startTrackerCron(updated);
-      } else {
-        this.rssService.stopTrackerCron(updated.id);
-      }
+      const updated = await this.trackerService.toggleTracker(id, active);
 
       res.json(updated);
     } catch {

@@ -3,10 +3,13 @@ import { TorznabController } from '../controllers/torznab.controller';
 import { TrackerController } from '../controllers/tracker.controller';
 import { RssService } from '../services/rss.service';
 
+import { TrackerService } from '../services/tracker.service';
+
 export function configureRoutes(rssService: RssService): Router {
   const router = Router();
   const torznabController = new TorznabController();
-  const trackerController = new TrackerController(rssService);
+  const trackerService = new TrackerService(rssService);
+  const trackerController = new TrackerController(trackerService);
 
   router.get('/json/torrents', torznabController.getJsonTorrents);
   router.get('/', torznabController.handleRequest);
