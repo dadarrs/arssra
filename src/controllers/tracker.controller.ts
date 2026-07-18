@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { TrackerRepository } from '../repositories/tracker.repository';
 import { RssService } from '../services/rss.service';
 import { TRACKERS } from '../trackers/definitions';
+import { calculateNextRun } from '../utils/cron.utils';
 
 const VALID_SCHEDULES = [
   { value: '*/30 * * * *', label: 'Every 30 minutes' },
@@ -42,19 +43,7 @@ export class TrackerController {
       const trackers = await this.repository.getAllTrackers();
 
       const mappedTrackers = trackers.map((t) => {
-        let nextRun = null;
-        if (t.lastRun) {
-          const time = new Date(t.lastRun).getTime();
-          const cron = t.cronSchedule;
-          if (cron === '*/30 * * * *') nextRun = new Date(time + 30 * 60000);
-          else if (cron === '0 * * * *') nextRun = new Date(time + 60 * 60000);
-          else if (cron === '0 */2 * * *') nextRun = new Date(time + 2 * 60 * 60000);
-          else if (cron === '0 */6 * * *') nextRun = new Date(time + 6 * 60 * 60000);
-          else if (cron === '0 */12 * * *') nextRun = new Date(time + 12 * 60 * 60000);
-          else if (cron === '0 0 * * *') nextRun = new Date(time + 24 * 60 * 60000);
-          else if (cron === '*/15 * * * *') nextRun = new Date(time + 15 * 60000);
-          else nextRun = new Date(time + 60 * 60000);
-        }
+        const nextRun = calculateNextRun(t.lastRun, t.cronSchedule);
 
         return {
           ...t,
