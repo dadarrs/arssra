@@ -41,7 +41,7 @@ export class RelativeTimePipe implements PipeTransform {
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
 
-    let label = '';
+    let label: string;
     if (days > 0) label = `${days} day${days > 1 ? 's' : ''}`;
     else if (hours > 0) label = `${hours} hr${hours > 1 ? 's' : ''}`;
     else if (minutes > 0) label = `${minutes} min${minutes > 1 ? 's' : ''}`;

@@ -21,7 +21,11 @@
       "eslint --fix",
       "prettier --write"
     ],
-    "src/**/*.json": [
+    "frontend/src/**/*.{ts,html}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "**/*.json": [
       "prettier --write"
     ]
   },
