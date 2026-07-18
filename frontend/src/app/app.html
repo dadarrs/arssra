@@ -1,0 +1,255 @@
+<mat-toolbar color="primary" class="app-toolbar">
+  <span>arssra</span>
+</mat-toolbar>
+
+<div class="app-container">
+  <div class="header-actions">
+    <h2>Active trackers</h2>
+    <button mat-raised-button color="accent" (click)="openAddTrackerDialog()">
+      <mat-icon>add</mat-icon> Add tracker
+    </button>
+  </div>
+
+  <mat-table [dataSource]="trackersDataSource" matSort #trackerSort="matSort" class="mat-elevation-z8 trackers-table">
+    <ng-container matColumnDef="name">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Name </mat-header-cell>
+      <mat-cell *matCellDef="let t" class="title-cell"> {{ t.name }} </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="lastRun">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Last run </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        <span class="time-text">{{ t.lastRun ? (t.lastRun | relativeTime) : 'Never' }}</span>
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="nextRun">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Next run </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        <span class="time-text">{{ t.nextRun ? (t.nextRun | relativeTime) : 'Pending' }}</span>
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="url">
+      <mat-header-cell *matHeaderCellDef> RSS URL </mat-header-cell>
+      <mat-cell *matCellDef="let t" class="url-cell"> {{ t.url }} </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="cronSchedule">
+      <mat-header-cell *matHeaderCellDef> Schedule </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        <code>{{ t.cronSchedule }}</code>
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="refreshStatus">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Status </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        @if (t.lastStatus === 'Success') {
+        <span class="time-text" style="color: #2e7d32; font-weight: 500; line-height: 1.2">
+          Success<br />
+          <small style="color: #999; font-weight: normal">(added {{ t.lastAddedCount }})</small>
+        </span>
+        }
+        @if (t.lastStatus === 'Failed') {
+        <span class="time-text" style="
+              color: #d32f2f;
+              font-weight: 500;
+              display: inline-flex;
+              align-items: center;
+              gap: 4px;
+            ">Failed
+          @if (t.lastError) {
+          <mat-icon [matTooltip]="t.lastError"
+            style="font-size: 14px; height: 14px; width: 14px; cursor: help">info</mat-icon>
+          }
+        </span>
+        }
+        @if (!t.lastStatus) {
+        <span class="time-text" style="color: #757575">Pending</span>
+        }
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Enable </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        <mat-slide-toggle aria-label="Toggle tracker active status" [checked]="t.active"
+          (change)="toggleTracker(t.id, $event.checked)"></mat-slide-toggle>
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <mat-header-cell *matHeaderCellDef> Action </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        <button mat-icon-button color="primary" (click)="editTracker(t)">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button color="warn" (click)="deleteTracker(t.id)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </mat-cell>
+    </ng-container>
+
+    <mat-header-row *matHeaderRowDef="trackerColumns"></mat-header-row>
+    <mat-row *matRowDef="let row; columns: trackerColumns"></mat-row>
+  </mat-table>
+
+  @if (trackersDataSource.data.length === 0) {
+  <div class="empty-state mat-elevation-z8">No trackers active. Add one to start indexing!</div>
+  }
+
+  <mat-form-field appearance="fill" class="search-field full-width" style="margin-top: 4rem" subscriptSizing="dynamic">
+    <mat-icon matPrefix>search</mat-icon>
+    <mat-label for="search-input">Search torrents</mat-label>
+    <input id="search-input" aria-label="Search torrents" matInput type="text" [(ngModel)]="searchQuery"
+      (ngModelChange)="onSearchModel($event)" placeholder="Search torrents" [matAutocomplete]="auto" />
+    @if (searchQuery) {
+    <button mat-icon-button matSuffix (click)="clearSearch()">
+      <mat-icon>close</mat-icon>
+    </button>
+    }
+    <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onSearchModel($event.option.value)">
+      @if (searchQuery && searchQuery.length >= 3) {
+      @for (t of torrentsDataSource.data; track t) {
+      <mat-option [value]="t.title">
+        {{ t.title }}
+      </mat-option>
+      }
+      }
+    </mat-autocomplete>
+  </mat-form-field>
+
+  <div class="header-actions" style="margin-top: 2rem">
+    <h2>Indexed torrents</h2>
+  </div>
+
+  <div class="stats-bar">
+    <span class="time-text">{{ torrentsDataSource.data.length }} torrents loaded</span>
+    <span class="time-text">{{ totalCount }} torrents indexed</span>
+  </div>
+
+  <mat-table [dataSource]="torrentsDataSource" matSort #torrentSort="matSort" class="mat-elevation-z8 torrents-table">
+    <ng-container matColumnDef="title">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Title </mat-header-cell>
+      <mat-cell *matCellDef="let item" class="title-cell"> {{ item.title }} </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="category">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Category </mat-header-cell>
+      <mat-cell *matCellDef="let item">
+        <span class="time-text">{{ formatCategory(item.category) }}</span>
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="tracker">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Tracker </mat-header-cell>
+      <mat-cell *matCellDef="let item">
+        <span class="time-text">{{ item.trackerName || 'Unknown' }}</span>
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="size">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Size </mat-header-cell>
+      <mat-cell *matCellDef="let item">
+        <span class="time-text">{{ formatSize(item.size) }}</span>
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="pubDate">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Published </mat-header-cell>
+      <mat-cell *matCellDef="let item">
+        <span class="time-text">{{ item.pubDate || item.created_at | relativeTime }}</span>
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="action">
+      <mat-header-cell *matHeaderCellDef> Action </mat-header-cell>
+      <mat-cell *matCellDef="let item">
+        @if (item.comments) {
+        <a mat-icon-button color="accent" [href]="item.comments" target="_blank" title="Comments">
+          <mat-icon>comment</mat-icon>
+        </a>
+        }
+        <a mat-icon-button color="primary" [href]="item.link" target="_blank" title="Download">
+          <mat-icon>file_download</mat-icon>
+        </a>
+      </mat-cell>
+    </ng-container>
+
+    <mat-header-row *matHeaderRowDef="torrentColumns"></mat-header-row>
+    <mat-row *matRowDef="let row; columns: torrentColumns"></mat-row>
+  </mat-table>
+</div>
+
+<ng-template #addTrackerDialog>
+  <h2 mat-dialog-title>{{ editingTrackerId ? 'Edit tracker' : 'Add new tracker' }}</h2>
+  <mat-dialog-content>
+    <mat-form-field appearance="fill" style="width: 100%; margin-top: 10px">
+      <mat-label for="tracker-def">Select tracker definition</mat-label>
+      <mat-select id="tracker-def" [(ngModel)]="newTrackerDefId" (selectionChange)="onDefinitionSelect()"
+        [disabled]="!!editingTrackerId">
+        @for (d of definitions; track d) {
+        <mat-option [value]="d.id"> {{ d.name }} - {{ d.description }} </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    @if (newTrackerDefId) {
+    <mat-form-field appearance="fill" style="width: 100%; margin-top: 10px">
+      <mat-label for="tracker-name">Tracker Name</mat-label>
+      <input id="tracker-name" aria-label="Tracker Name" matInput type="text" [(ngModel)]="newTrackerName"
+        placeholder="My Tracker" />
+    </mat-form-field>
+    }
+
+    @if (newTrackerDefId) {
+    <mat-form-field appearance="fill" style="width: 100%; margin-top: 10px">
+      <mat-label for="tracker-url">RSS URL</mat-label>
+      <input id="tracker-url" aria-label="RSS URL" matInput type="text" [(ngModel)]="newTrackerUrl"
+        placeholder="https://tvchaosuk.com/rss/123.aBcDeFgHiJkLmNoPqRsT" />
+    </mat-form-field>
+    }
+
+    @if (newTrackerDefId) {
+    <mat-form-field appearance="fill" style="width: 100%; margin-top: 10px">
+      <mat-label for="tracker-schedule">Update Schedule</mat-label>
+      <mat-select id="tracker-schedule" [(ngModel)]="newTrackerSchedule">
+        <mat-option value="*/30 * * * *">Every 30 minutes</mat-option>
+        <mat-option value="0 * * * *">Every 1 hour</mat-option>
+        <mat-option value="0 */2 * * *">Every 2 hours</mat-option>
+        <mat-option value="0 */6 * * *">Every 6 hours</mat-option>
+        <mat-option value="0 */12 * * *">Every 12 hours</mat-option>
+        <mat-option value="0 0 * * *">Every 24 hours</mat-option>
+      </mat-select>
+    </mat-form-field>
+    }
+
+    @if (newTrackerDefId === 'tvchaosuk') {
+    <div class="info-box">
+      <mat-icon>info</mat-icon>
+      <span>You can get your custom RSS feed URL from
+        <a href="https://tvchaosuk.com/rss/index" target="_blank"
+          rel="noopener noreferrer">https://tvchaosuk.com/rss/index</a>.</span>
+    </div>
+    }
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-raised-button color="primary" (click)="saveTracker()"
+      [disabled]="!newTrackerDefId || !newTrackerUrl || !newTrackerSchedule">
+      {{ editingTrackerId ? 'Save changes' : 'Add' }}
+    </button>
+  </mat-dialog-actions>
+</ng-template>
+
+<ng-template #deleteConfirmDialog>
+  <h2 mat-dialog-title>Confirm Deletion</h2>
+  <mat-dialog-content>
+    <p>Are you sure you want to permanently delete this tracker? This action cannot be undone.</p>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-raised-button color="warn" (click)="confirmDelete()">Delete</button>
+  </mat-dialog-actions>
+</ng-template>

@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../torrents.db"
+}
+
+model Tracker {
+  id           Int      @id @default(autoincrement())
+  name         String
+  url          String
+  cronSchedule String   @default("*/15 * * * *")
+  active       Boolean  @default(true)
+  lastRun      DateTime?
+  lastStatus   String?
+  lastAddedCount Int?
+  lastError    String?
+  created_at   DateTime @default(now())
+
+  @@map("trackers")
+}
+
+model Torrent {
+  id               Int      @id @default(autoincrement())
+  title            String
+  guid             String   @unique
+  link             String
+  pubDate          String?
+  description      String?
+  size             Float?
+  enclosure_url    String?
+  enclosure_type   String?
+  enclosure_length Float?
+  trackerName      String?
+  category         String?
+  comments         String?
+  created_at       DateTime @default(now())
+
+  @@map("torrents")
+}
