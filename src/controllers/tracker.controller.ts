@@ -3,6 +3,15 @@ import { TrackerRepository } from '../repositories/tracker.repository';
 import { RssService } from '../services/rss.service';
 import { TRACKERS } from '../trackers/definitions';
 
+const VALID_SCHEDULES = [
+  { value: '*/30 * * * *', label: 'Every 30 minutes' },
+  { value: '0 * * * *', label: 'Every 1 hour' },
+  { value: '0 */2 * * *', label: 'Every 2 hours' },
+  { value: '0 */6 * * *', label: 'Every 6 hours' },
+  { value: '0 */12 * * *', label: 'Every 12 hours' },
+  { value: '0 0 * * *', label: 'Every 24 hours' },
+];
+
 export class TrackerController {
   private readonly repository: TrackerRepository;
   private readonly rssService: RssService;
@@ -11,6 +20,7 @@ export class TrackerController {
     this.repository = new TrackerRepository();
     this.rssService = rssService;
 
+    this.getSchedules = this.getSchedules.bind(this);
     this.getDefinitions = this.getDefinitions.bind(this);
     this.getAllTrackers = this.getAllTrackers.bind(this);
     this.createTracker = this.createTracker.bind(this);
@@ -21,6 +31,10 @@ export class TrackerController {
 
   public async getDefinitions(req: Request, res: Response) {
     res.json(TRACKERS);
+  }
+
+  public async getSchedules(req: Request, res: Response) {
+    res.json(VALID_SCHEDULES);
   }
 
   public async getAllTrackers(req: Request, res: Response) {
@@ -68,14 +82,9 @@ export class TrackerController {
         return res.status(400).json({ error: 'Invalid tracker definition ID' });
       }
 
-      // Backend validation: Don't allow anything less than 30 mins.
-      // The frontend sends standard cron strings like '*/30 * * * *', '0 * * * *', etc.
-      // For simplicity, we trust the dropdown values, but prevent crazy values like '*/1'
+      // Backend validation: Ensure schedule strictly matches one of the allowed values
       let finalSchedule = schedule || '*/30 * * * *';
-      if (
-        (finalSchedule.startsWith('*/') && Number.parseInt(finalSchedule.split('/')[1]) < 30) ||
-        finalSchedule === '* * * * *'
-      ) {
+      if (!VALID_SCHEDULES.some((s) => s.value === finalSchedule)) {
         finalSchedule = '*/30 * * * *';
       }
 
@@ -112,13 +121,8 @@ export class TrackerController {
       const { url, schedule, name } = req.body;
 
       let finalSchedule = schedule;
-      if (finalSchedule) {
-        if (
-          (finalSchedule.startsWith('*/') && Number.parseInt(finalSchedule.split('/')[1]) < 30) ||
-          finalSchedule === '* * * * *'
-        ) {
-          finalSchedule = '*/30 * * * *';
-        }
+      if (finalSchedule && !VALID_SCHEDULES.some((s) => s.value === finalSchedule)) {
+        finalSchedule = '*/30 * * * *';
       }
 
       const updated = await this.repository.updateTracker(id, url, finalSchedule, name);

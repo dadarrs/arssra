@@ -55,6 +55,12 @@ describe('ApiService', () => {
     expect(req.request.method).toBe('GET');
   });
 
+  it('getTrackerSchedules should call correct URL', () => {
+    service.getTrackerSchedules().subscribe();
+    const req = httpMock.expectOne('/api/json/trackers/schedules');
+    expect(req.request.method).toBe('GET');
+  });
+
   it('toggleTracker should send PUT request', () => {
     service.toggleTracker(5, true).subscribe();
     const req = httpMock.expectOne('/api/json/trackers/5/toggle');

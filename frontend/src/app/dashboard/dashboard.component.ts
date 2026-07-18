@@ -56,6 +56,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   trackersDataSource = new MatTableDataSource<any>();
 
   definitions: any[] = [];
+  schedules: any[] = [];
   totalCount = 0;
 
   newTrackerDefId = '';
@@ -98,6 +99,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     this.fetchTorrents();
     this.fetchTrackers();
     this.fetchDefinitions();
+    this.fetchSchedules();
   }
 
   fetchTorrents() {
@@ -178,6 +180,13 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   fetchDefinitions() {
     this.api.getTrackerDefinitions().subscribe((res) => {
       this.definitions = res;
+      this.cdr.detectChanges();
+    });
+  }
+
+  fetchSchedules() {
+    this.api.getTrackerSchedules().subscribe((res) => {
+      this.schedules = res;
       this.cdr.detectChanges();
     });
   }

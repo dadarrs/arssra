@@ -209,12 +209,9 @@
     <mat-form-field appearance="fill" style="width: 100%; margin-top: 10px">
       <mat-label for="tracker-schedule">Update Schedule</mat-label>
       <mat-select id="tracker-schedule" [(ngModel)]="newTrackerSchedule">
-        <mat-option value="*/30 * * * *">Every 30 minutes</mat-option>
-        <mat-option value="0 * * * *">Every 1 hour</mat-option>
-        <mat-option value="0 */2 * * *">Every 2 hours</mat-option>
-        <mat-option value="0 */6 * * *">Every 6 hours</mat-option>
-        <mat-option value="0 */12 * * *">Every 12 hours</mat-option>
-        <mat-option value="0 0 * * *">Every 24 hours</mat-option>
+        @for (s of schedules; track s.value) {
+        <mat-option [value]="s.value">{{ s.label }}</mat-option>
+        }
       </mat-select>
     </mat-form-field>
     }

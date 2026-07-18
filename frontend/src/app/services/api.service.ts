@@ -27,6 +27,10 @@ export class ApiService {
     return this.http.get<any[]>('/api/json/trackers/definitions');
   }
 
+  getTrackerSchedules(): Observable<any[]> {
+    return this.http.get<any[]>('/api/json/trackers/schedules');
+  }
+
   toggleTracker(id: number, active: boolean): Observable<any> {
     return this.http.put(`/api/json/trackers/${id}/toggle`, { active });
   }

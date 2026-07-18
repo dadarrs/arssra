@@ -11,6 +11,7 @@ export function configureRoutes(rssService: RssService): Router {
   router.get('/json/torrents', torznabController.getJsonTorrents);
   router.get('/', torznabController.handleRequest);
 
+  router.get('/json/trackers/schedules', trackerController.getSchedules);
   router.get('/json/trackers/definitions', trackerController.getDefinitions);
   router.get('/json/trackers', trackerController.getAllTrackers);
   router.post('/json/trackers', trackerController.createTracker);

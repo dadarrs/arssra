@@ -29,14 +29,10 @@ describe('DashboardComponent', () => {
   });
 
   function expectInitialLoads() {
-    const reqTorrents = httpTestingController.expectOne('/api/json/torrents');
-    reqTorrents.flush({ items: [], totalCount: 0 });
-
-    const reqTrackers = httpTestingController.expectOne('/api/json/trackers');
-    reqTrackers.flush([]);
-
-    const reqDefs = httpTestingController.expectOne('/api/json/trackers/definitions');
-    reqDefs.flush([{ id: 'def1', name: 'Def 1' }]);
+    httpTestingController.expectOne('/api/json/torrents').flush({ items: [], totalCount: 0 });
+    httpTestingController.expectOne('/api/json/trackers').flush([]);
+    httpTestingController.expectOne('/api/json/trackers/definitions').flush([{ id: 'def1', name: 'Def 1' }]);
+    httpTestingController.expectOne('/api/json/trackers/schedules').flush([]);
   }
 
   it('should fetch initial data on init', () => {
