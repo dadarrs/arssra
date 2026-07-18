@@ -1,0 +1,178 @@
+.search-field {
+  width: 100%;
+  font-size: 14px;
+  margin-bottom: 2rem;
+}
+
+.search-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}
+
+.info-box {
+  display: flex;
+  align-items: center;
+  background-color: #e3f2fd;
+  color: #0d47a1;
+  padding: 10px 12px;
+  border-radius: 4px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.info-box mat-icon {
+  margin-right: 8px;
+  color: #1976d2;
+  flex-shrink: 0;
+}
+
+.info-box a {
+  color: #1565c0;
+  font-weight: 500;
+  text-decoration: underline;
+}
+
+.header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.header-actions h2 {
+  margin: 0;
+}
+
+.trackers-table,
+.torrents-table {
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.url-cell {
+  word-break: break-all;
+  color: #666;
+}
+
+.torrents-table {
+  margin-top: 1rem;
+}
+
+/* Active Trackers Table Columns */
+.trackers-table .mat-column-name {
+  flex: 1 1 auto;
+  padding-right: 16px;
+}
+
+.trackers-table .mat-column-lastRun,
+.trackers-table .mat-column-nextRun {
+  flex: 0 0 160px;
+}
+
+.trackers-table .mat-column-refreshStatus {
+  flex: 0 0 140px;
+}
+
+.trackers-table .mat-column-status {
+  flex: 0 0 100px;
+}
+
+.trackers-table .mat-column-actions {
+  flex: 0 0 100px;
+  display: flex;
+  justify-content: flex-start;
+  padding-right: 16px;
+}
+
+.title-cell {
+  font-weight: 500;
+}
+
+.empty-state mat-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+  color: #ccc;
+}
+
+.time-text {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+  margin-bottom: 2rem;
+  background: white;
+  border-radius: 4px;
+}
+
+code {
+  background: #f1f5f9;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.stats-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 1rem 2rem;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+  text-align: right;
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stats-bar .time-text {
+  margin: 0;
+}
+
+.accent-text {
+  color: #3f51b5;
+}
+
+.torrents-table .mat-column-title {
+  flex: 1 1 auto;
+  padding-right: 16px;
+}
+
+.torrents-table .mat-column-tracker {
+  flex: 0 0 160px;
+}
+
+.torrents-table .mat-column-category {
+  flex: 0 0 150px;
+  white-space: nowrap;
+}
+
+.torrents-table .mat-column-size {
+  flex: 0 0 100px;
+}
+
+.torrents-table .mat-column-pubDate {
+  flex: 0 0 110px;
+}
+
+.torrents-table .mat-column-action {
+  flex: 0 0 100px;
+  display: flex;
+  justify-content: flex-start;
+  padding-right: 16px;
+}
+
+.trackers-table mat-row:hover,
+.torrents-table mat-row:hover {
+  background-color: rgba(63, 81, 181, 0.08) !important;
+  transition: background-color 0.2s ease;
+}
