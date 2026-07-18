@@ -8,7 +8,6 @@ import {
   ViewChild
 } from '@angular/core';
 
-import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
@@ -22,6 +21,7 @@ import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { ApiService } from '../services/api.service';
 
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 
@@ -79,7 +79,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   @ViewChild('deleteConfirmDialog') deleteConfirmDialog!: TemplateRef<any>;
 
   constructor(
-    private readonly http: HttpClient,
+    private readonly api: ApiService,
     private readonly _dialog: MatDialog,
     private readonly cdr: ChangeDetectorRef,
   ) {}
@@ -102,9 +102,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
 
   fetchTorrents() {
     this.hasMoreData = true;
-    const q = encodeURIComponent(this.searchQuery);
-    const url = q ? `/api/json/torrents?q=${q}` : `/api/json/torrents`;
-    this.http.get<any>(url).subscribe((res) => {
+    this.api.getTorrents(this.searchQuery).subscribe((res) => {
       this.torrentsDataSource.data = res.items;
       this.totalCount = res.totalCount;
       if (this.torrentsDataSource.data.length >= res.totalCount) {
@@ -136,13 +134,9 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     }
 
     this.isLoadingMore = true;
-    const q = encodeURIComponent(this.searchQuery);
     const offset = this.torrentsDataSource.data.length;
-    const url = q
-      ? `/api/json/torrents?q=${q}&offset=${offset}`
-      : `/api/json/torrents?offset=${offset}`;
 
-    this.http.get<any>(url).subscribe((res) => {
+    this.api.getTorrents(this.searchQuery, offset).subscribe((res) => {
       this.torrentsDataSource.data = [...this.torrentsDataSource.data, ...res.items];
       this.totalCount = res.totalCount;
       this.isLoadingMore = false;
@@ -175,21 +169,21 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   }
 
   fetchTrackers() {
-    this.http.get<any[]>('/api/json/trackers').subscribe((res) => {
+    this.api.getTrackers().subscribe((res) => {
       this.trackersDataSource.data = res;
       this.cdr.detectChanges();
     });
   }
 
   fetchDefinitions() {
-    this.http.get<any[]>('/api/json/trackers/definitions').subscribe((res) => {
+    this.api.getTrackerDefinitions().subscribe((res) => {
       this.definitions = res;
       this.cdr.detectChanges();
     });
   }
 
   toggleTracker(id: number, active: boolean) {
-    this.http.put(`/api/json/trackers/${id}/toggle`, { active }).subscribe(() => {
+    this.api.toggleTracker(id, active).subscribe(() => {
       this.fetchTrackers();
     });
   }
@@ -201,7 +195,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
 
   confirmDelete() {
     if (this.trackerToDelete !== null) {
-      this.http.delete(`/api/json/trackers/${this.trackerToDelete}`).subscribe(() => {
+      this.api.deleteTracker(this.trackerToDelete).subscribe(() => {
         this.fetchTrackers();
         this.dialog.closeAll();
         this.trackerToDelete = null;
@@ -254,8 +248,8 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     };
 
     const request = this.editingTrackerId
-      ? this.http.put(`/api/json/trackers/${this.editingTrackerId}`, payload)
-      : this.http.post('/api/json/trackers', payload);
+      ? this.api.updateTracker(this.editingTrackerId, payload)
+      : this.api.createTracker(payload);
 
     request.subscribe(() => {
       this.dialog.closeAll();
