@@ -1,0 +1,14 @@
+services:
+  arssra:
+    image: arssra:latest
+    build: .
+    container_name: arssra
+    ports:
+      - "${PORT:-3232}:${PORT:-3232}"
+    volumes:
+      - ./config:/config
+    environment:
+      - PORT=${PORT:-3232}
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+    restart: unless-stopped

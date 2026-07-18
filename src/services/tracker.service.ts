@@ -11,7 +11,7 @@ export class TrackerService {
 
   async getAllTrackers() {
     const trackers = await this.repository.getAllTrackers();
-    return trackers.map((t) => ({
+    return trackers.map((t: any) => ({
       ...t,
       nextRun: t.active ? calculateNextRun(t.lastRun, t.cronSchedule) : null,
     }));

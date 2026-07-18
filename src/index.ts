@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import express from 'express';
+import path from 'node:path';
 import { configureRoutes } from './routes/api.routes';
 import { RssService } from './services/rss.service';
 
@@ -21,6 +22,15 @@ class App {
 
   private initializeRoutes() {
     this.app.use('/api', configureRoutes(this.rssService));
+
+    // Serve static frontend files
+    const frontendPath = path.join(__dirname, '../frontend/dist/frontend/browser');
+    this.app.use(express.static(frontendPath));
+
+    // Fallback for Angular routing
+    this.app.use((_req, res) => {
+      res.sendFile(path.join(frontendPath, 'index.html'));
+    });
   }
 
   public start() {
