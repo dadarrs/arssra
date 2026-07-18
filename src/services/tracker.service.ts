@@ -13,7 +13,7 @@ export class TrackerService {
     const trackers = await this.repository.getAllTrackers();
     return trackers.map((t) => ({
       ...t,
-      nextRun: calculateNextRun(t.lastRun, t.cronSchedule),
+      nextRun: t.active ? calculateNextRun(t.lastRun, t.cronSchedule) : null,
     }));
   }
 

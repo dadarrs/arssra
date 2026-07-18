@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TrackerService } from './tracker.service';
 
-const mockGetAllTrackers = vi
-  .fn()
-  .mockResolvedValue([
-    { id: 1, lastRun: new Date('2024-01-01T12:00:00Z'), cronSchedule: '0 * * * *' },
-  ]);
+const mockGetAllTrackers = vi.fn().mockResolvedValue([
+  { id: 1, active: true, lastRun: new Date('2024-01-01T12:00:00Z'), cronSchedule: '0 * * * *' },
+  { id: 2, active: false, lastRun: new Date('2024-01-01T12:00:00Z'), cronSchedule: '0 * * * *' },
+]);
 const mockCreateTracker = vi.fn().mockResolvedValue({ id: 2, active: true });
 const mockDeleteTracker = vi.fn().mockResolvedValue(undefined);
 const mockUpdateTracker = vi.fn().mockResolvedValue({ id: 3, active: true });
@@ -35,10 +34,15 @@ describe('TrackerService', () => {
     service = new TrackerService(rssService as any);
   });
 
-  it('should get all trackers with calculated nextRun', async () => {
+  it('should get all trackers with calculated nextRun for active trackers only', async () => {
     const trackers = await service.getAllTrackers();
-    expect(trackers).toHaveLength(1);
+    expect(trackers).toHaveLength(2);
+
+    // Active tracker should have nextRun calculated
     expect(trackers[0].nextRun?.toISOString()).toBe('2024-01-01T13:00:00.000Z');
+
+    // Inactive tracker should return null for nextRun
+    expect(trackers[1].nextRun).toBeNull();
   });
 
   it('should start cron when creating active tracker', async () => {
