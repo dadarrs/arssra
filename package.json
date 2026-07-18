@@ -8,6 +8,7 @@
     "build": "tsc",
     "dev": "nodemon --watch src src/index.ts",
     "format": "prettier --write \"src/**/*.{ts,js,json}\"",
+    "pretest": "mkdir -p config && npx prisma db push --skip-generate",
     "test": "vitest run src/",
     "test:watch": "vitest src/",
     "lint": "eslint \"src/**/*.{ts,js}\"",
