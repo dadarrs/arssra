@@ -198,8 +198,8 @@ export class TorznabController {
       return this.generateCaps(res);
     }
 
-    let items: any[] = [];
-    let totalCount = 0;
+    let items: any[];
+    let totalCount: number;
 
     if (t === 'search' || t === 'tvsearch' || t === 'movie' || (!t && q)) {
       if (q) {
@@ -229,8 +229,8 @@ export class TorznabController {
     const parsedOffset = Number.parseInt(offset as string, 10) || 0;
     const parsedLimit = Number.parseInt(limit as string, 10) || 50;
 
-    let items: any[] = [];
-    let totalCount = 0;
+    let items: any[];
+    let totalCount: number;
 
     if (q) {
       items = await this.repository.searchTorrents(q as string, parsedLimit, parsedOffset);

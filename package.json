@@ -9,6 +9,7 @@
     "dev": "nodemon --watch src src/index.ts",
     "format": "prettier --write \"src/**/*.{ts,js,json}\"",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint \"src/**/*.{ts,js}\"",
     "prepare": "husky"
   },
   "keywords": [],
@@ -16,7 +17,11 @@
   "license": "MIT",
   "type": "commonjs",
   "lint-staged": {
-    "src/**/*.{ts,js,json}": [
+    "src/**/*.{ts,js}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "src/**/*.json": [
       "prettier --write"
     ]
   },
@@ -29,15 +34,19 @@
     "xmlbuilder2": "^4.0.3"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/express": "^5.0.6",
     "@types/node": "^26.0.1",
     "@types/node-cron": "^3.0.11",
+    "eslint": "^10.6.0",
+    "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
     "nodemon": "^3.1.14",
     "prettier": "^3.9.5",
     "prisma": "^5.22.0",
     "ts-node": "^10.9.2",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.63.0"
   }
 }
