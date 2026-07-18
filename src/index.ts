@@ -31,5 +31,9 @@ class App {
   }
 }
 
-const server = new App();
-server.start();
+export const server = new App();
+
+// Only start the server if this file is run directly
+if (require.main === module) {
+  server.start();
+}

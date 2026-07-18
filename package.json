@@ -8,7 +8,8 @@
     "build": "tsc",
     "dev": "nodemon --watch src src/index.ts",
     "format": "prettier --write \"src/**/*.{ts,js,json}\"",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run src/",
+    "test:watch": "vitest src/",
     "lint": "eslint \"src/**/*.{ts,js}\"",
     "prepare": "husky"
   },
@@ -42,6 +43,8 @@
     "@types/express": "^5.0.6",
     "@types/node": "^26.0.1",
     "@types/node-cron": "^3.0.11",
+    "@types/supertest": "^7.2.0",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^10.6.0",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
@@ -49,8 +52,10 @@
     "nodemon": "^3.1.14",
     "prettier": "^3.9.5",
     "prisma": "^5.22.0",
+    "supertest": "^7.2.2",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.63.0"
+    "typescript-eslint": "^8.63.0",
+    "vitest": "^4.1.10"
   }
 }
