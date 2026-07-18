@@ -8,6 +8,7 @@ import {
   ViewChild
 } from '@angular/core';
 
+import { CommonModule, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
@@ -30,6 +31,8 @@ import { RelativeTimePipe } from '../pipes/relative-time.pipe';
   standalone: true,
   imports: [
     FormsModule,
+    NgClass,
+    CommonModule,
 
     MatToolbarModule,
     MatIconModule,
@@ -66,6 +69,12 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   editingTrackerId: number | null = null;
   trackerToDelete: number | null = null;
 
+  prowlarrUrl = 'http://localhost:9696';
+  prowlarrApiKey = '';
+  arssraUrl = 'http://localhost:3232';
+  prowlarrSyncStatus: 'idle' | 'syncing' | 'success' | 'error' = 'idle';
+  prowlarrSyncMessage = '';
+
   searchQuery = '';
   isLoadingMore = false;
   hasMoreData = true;
@@ -78,6 +87,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   @ViewChild('torrentSort') torrentSort!: MatSort;
   @ViewChild('addTrackerDialog') addTrackerDialog!: TemplateRef<any>;
   @ViewChild('deleteConfirmDialog') deleteConfirmDialog!: TemplateRef<any>;
+  @ViewChild('prowlarrSyncDialog') prowlarrSyncDialog!: TemplateRef<any>;
 
   constructor(
     private readonly api: ApiService,
@@ -269,6 +279,48 @@ export class DashboardComponent implements OnInit, AfterViewInit {
       this.newTrackerSchedule = '*/30 * * * *';
       this.fetchTrackers();
     });
+  }
+
+  openProwlarrModal() {
+    this.prowlarrSyncStatus = 'idle';
+    this.prowlarrSyncMessage = '';
+    this.dialog.open(this.prowlarrSyncDialog, { width: '600px' });
+  }
+
+  syncToProwlarr() {
+    if (!this.prowlarrUrl || !this.prowlarrApiKey || !this.arssraUrl) return;
+
+    this.prowlarrSyncStatus = 'syncing';
+    this.prowlarrSyncMessage = '';
+    this.cdr.detectChanges();
+
+    this.api.syncProwlarr({
+      prowlarrUrl: this.prowlarrUrl,
+      prowlarrApiKey: this.prowlarrApiKey,
+      arssraUrl: this.arssraUrl
+    }).subscribe({
+      next: (res) => {
+        this.prowlarrSyncStatus = 'success';
+        this.prowlarrSyncMessage = res.message || 'Successfully synced with Prowlarr!';
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.prowlarrSyncStatus = 'error';
+        const backendError = err.error?.error;
+        const details = err.error?.details;
+        
+        if (backendError) {
+          this.prowlarrSyncMessage = details ? `${backendError}: ${details}` : backendError;
+        } else {
+          this.prowlarrSyncMessage = 'Failed to sync with Prowlarr. Check your URL and API Key.';
+        }
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text);
   }
 
   formatSize(size: number) {

@@ -265,4 +265,63 @@ describe('DashboardComponent', () => {
       vi.useRealTimers();
     });
   });
+
+  describe('Prowlarr Integration', () => {
+    beforeEach(() => {
+      component.ngOnInit();
+      expectInitialLoads();
+    });
+
+    it('should open Prowlarr Modal and reset status', () => {
+      component.prowlarrSyncStatus = 'error';
+      component.openProwlarrModal();
+      expect(component.prowlarrSyncStatus).toBe('idle');
+      expect(component.dialog.open).toHaveBeenCalled();
+    });
+
+    it('should not sync if required fields missing', () => {
+      component.prowlarrUrl = '';
+      component.syncToProwlarr();
+      httpTestingController.expectNone('/api/json/prowlarr/sync');
+    });
+
+    it('should sync successfully', () => {
+      component.prowlarrUrl = 'http://test:9696';
+      component.prowlarrApiKey = 'test_key';
+      component.arssraUrl = 'http://localhost:3232';
+
+      component.syncToProwlarr();
+
+      expect(component.prowlarrSyncStatus).toBe('syncing');
+
+      const req = httpTestingController.expectOne('/api/json/prowlarr/sync');
+      expect(req.request.method).toBe('POST');
+      req.flush({ message: 'Successfully added arssra to Prowlarr' });
+
+      expect(component.prowlarrSyncStatus).toBe('success');
+      expect(component.prowlarrSyncMessage).toBe('Successfully added arssra to Prowlarr');
+    });
+
+    it('should handle sync errors cleanly', () => {
+      component.prowlarrUrl = 'http://test:9696';
+      component.prowlarrApiKey = 'test_key';
+      component.arssraUrl = 'http://localhost:3232';
+
+      component.syncToProwlarr();
+
+      const req = httpTestingController.expectOne('/api/json/prowlarr/sync');
+      req.flush({ error: 'Prowlarr error: Bad Request', details: 'Priority invalid' }, { status: 400, statusText: 'Bad Request' });
+
+      expect(component.prowlarrSyncStatus).toBe('error');
+      expect(component.prowlarrSyncMessage).toBe('Prowlarr error: Bad Request: Priority invalid');
+    });
+
+    it('should copy arssra URL to clipboard', () => {
+      const clipboardMock = { writeText: vi.fn().mockResolvedValue(undefined) };
+      Object.assign(navigator, { clipboard: clipboardMock });
+      
+      component.copyToClipboard('test_url');
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith('test_url');
+    });
+  });
 });

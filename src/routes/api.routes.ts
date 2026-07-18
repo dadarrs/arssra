@@ -1,15 +1,18 @@
 import { Router } from 'express';
+import { ProwlarrController } from '../controllers/prowlarr.controller';
 import { TorznabController } from '../controllers/torznab.controller';
 import { TrackerController } from '../controllers/tracker.controller';
 import { RssService } from '../services/rss.service';
-
 import { TrackerService } from '../services/tracker.service';
 
 export function configureRoutes(rssService: RssService): Router {
   const router = Router();
   const torznabController = new TorznabController();
+  const prowlarrController = new ProwlarrController();
   const trackerService = new TrackerService(rssService);
   const trackerController = new TrackerController(trackerService);
+
+  router.post('/json/prowlarr/sync', prowlarrController.syncToProwlarr.bind(prowlarrController));
 
   router.get('/json/torrents', torznabController.getJsonTorrents);
   router.get('/', torznabController.handleRequest);

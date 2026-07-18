@@ -13,7 +13,7 @@ class App {
   constructor() {
     this.app = express();
     this.app.use(express.json()); // enable JSON body parsing
-    this.port = process.env.PORT || 3000;
+    this.port = process.env.PORT || 3232;
     this.rssService = new RssService();
 
     this.initializeRoutes();

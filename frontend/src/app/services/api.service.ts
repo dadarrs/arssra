@@ -46,4 +46,8 @@ export class ApiService {
   updateTracker(id: number, payload: any): Observable<any> {
     return this.http.put(`/api/json/trackers/${id}`, payload);
   }
+
+  syncProwlarr(payload: { prowlarrUrl: string; prowlarrApiKey: string; arssraUrl: string }): Observable<any> {
+    return this.http.post('/api/json/prowlarr/sync', payload);
+  }
 }

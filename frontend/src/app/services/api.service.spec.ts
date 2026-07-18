@@ -89,4 +89,12 @@ describe('ApiService', () => {
     expect(req.request.method).toBe('PUT');
     expect(req.request.body).toEqual(payload);
   });
+
+  it('syncProwlarr should send POST request', () => {
+    const payload = { prowlarrUrl: 'http://test:9696', prowlarrApiKey: 'test', arssraUrl: 'http://localhost:3232' };
+    service.syncProwlarr(payload).subscribe();
+    const req = httpMock.expectOne('/api/json/prowlarr/sync');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(payload);
+  });
 });

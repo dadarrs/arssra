@@ -176,3 +176,100 @@ code {
   background-color: rgba(63, 81, 181, 0.08) !important;
   transition: background-color 0.2s ease;
 }
+
+.header-button-group {
+  display: flex;
+  gap: 10px;
+}
+
+.full-width-field {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.status-success-text {
+  color: #2e7d32;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.status-success-subtext {
+  color: #999;
+  font-weight: normal;
+}
+
+.status-failed-text {
+  color: #d32f2f;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-error-icon {
+  font-size: 14px;
+  height: 14px;
+  width: 14px;
+  cursor: help;
+}
+
+.status-pending-text {
+  color: #757575;
+}
+
+.search-field-spacing {
+  margin-top: 4rem;
+}
+
+.section-title-spacing {
+  margin-top: 2rem;
+}
+
+.sync-status-box.error {
+  border-left-color: #f44336;
+}
+
+.sync-status-box.success {
+  border-left-color: #4caf50;
+}
+
+.sync-status-icon.error {
+  color: #f44336;
+}
+
+.sync-status-icon.success {
+  color: #4caf50;
+}
+
+.manual-sync-section {
+  margin-top: 2rem;
+}
+
+.manual-sync-title {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+  color: #555;
+}
+
+.manual-sync-subtitle {
+  margin-bottom: 1rem;
+  color: #777;
+}
+
+.copy-url-container {
+  display: flex;
+  align-items: center;
+  background: #f5f5f5;
+  border-radius: 4px;
+  padding: 4px;
+  border: 1px solid #e0e0e0;
+}
+
+.copy-url-input {
+  flex: 1;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  outline: none;
+  color: #333;
+}
