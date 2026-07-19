@@ -52,38 +52,20 @@ export class ProwlarrController {
       const indexers: any[] = await getResponse.json();
       const existingIndexer = indexers.find((idx) => idx.name.toLowerCase() === 'arssra');
 
-      const payload: any = {
-        enable: true,
-        name: 'arssra',
-        implementation: 'Torznab',
-        configContract: 'TorznabSettings',
-        appProfileId: existingIndexer ? existingIndexer.appProfileId || 1 : 1,
-        priority: existingIndexer ? existingIndexer.priority || 25 : 25,
-        fields: [
-          {
-            name: 'baseUrl',
-            value: cleanArssraUrl,
-          },
-          {
-            name: 'apiPath',
-            value: '/api',
-          },
-          {
-            name: 'apiKey',
-            value: '',
-          },
-          {
-            name: 'categories',
-            value: [2000, 3000, 5000], // Movies, Audio, TV
-          },
-        ],
-        tags: [],
-      };
-
       let response;
       if (existingIndexer) {
         // UPDATE existing indexer (PUT)
-        payload.id = existingIndexer.id;
+        const updatePayload = { ...existingIndexer };
+        updatePayload.enable = true;
+
+        // Safely update just the fields we care about, preserving the rest
+        if (Array.isArray(updatePayload.fields)) {
+          updatePayload.fields.forEach((field: any) => {
+            if (field.name === 'baseUrl') field.value = cleanArssraUrl;
+            if (field.name === 'apiPath') field.value = '/api';
+            if (field.name === 'apiKey') field.value = '';
+          });
+        }
 
         response = await fetch(`${cleanProwlarrUrl}/api/v1/indexer/${existingIndexer.id}`, {
           method: 'PUT',
@@ -91,17 +73,32 @@ export class ProwlarrController {
             'Content-Type': 'application/json',
             'X-Api-Key': prowlarrApiKey,
           },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(updatePayload),
         });
       } else {
         // CREATE new indexer (POST)
+        const createPayload = {
+          enable: true,
+          name: 'arssra',
+          implementation: 'Torznab',
+          configContract: 'TorznabSettings',
+          appProfileId: 1,
+          priority: 25,
+          fields: [
+            { name: 'baseUrl', value: cleanArssraUrl },
+            { name: 'apiPath', value: '/api' },
+            { name: 'apiKey', value: '' },
+          ],
+          tags: [],
+        };
+
         response = await fetch(`${cleanProwlarrUrl}/api/v1/indexer`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'X-Api-Key': prowlarrApiKey,
           },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(createPayload),
         });
       }
 

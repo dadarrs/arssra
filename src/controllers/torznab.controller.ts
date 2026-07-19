@@ -162,8 +162,6 @@ export class TorznabController {
       .ele('subcat', { id: '3030', name: 'Audio/Audiobook' })
       .up()
       .up()
-      .ele('category', { id: '4000', name: 'PC' })
-      .up()
       .ele('category', { id: '5000', name: 'TV' })
       .ele('subcat', { id: '5030', name: 'TV/SD' })
       .up()
@@ -175,12 +173,6 @@ export class TorznabController {
       .up()
       .ele('subcat', { id: '5080', name: 'TV/Documentary' })
       .up()
-      .up()
-      .ele('category', { id: '6000', name: 'XXX' })
-      .up()
-      .ele('category', { id: '7000', name: 'Other' })
-      .up()
-      .ele('category', { id: '8000', name: 'Books' })
       .up()
       .up();
     res.set('Content-Type', 'text/xml');
