@@ -9,5 +9,5 @@ services:
       - PGID=1000
       - TZ=Etc/UTC
     volumes:
-      - ./config:/config
+      - ./config:/app/config
     restart: unless-stopped
