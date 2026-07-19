@@ -10,83 +10,85 @@
   </div>
 </div>
 
-<mat-table [dataSource]="trackersDataSource" matSort #trackerSort="matSort" class="mat-elevation-z8 trackers-table">
-  <ng-container matColumnDef="name">
-    <mat-header-cell *matHeaderCellDef mat-sort-header> Name </mat-header-cell>
-    <mat-cell *matCellDef="let t" class="title-cell"> {{ t.name }} </mat-cell>
-  </ng-container>
+<div class="table-container">
+  <mat-table [dataSource]="trackersDataSource" matSort #trackerSort="matSort" class="mat-elevation-z8 trackers-table">
+    <ng-container matColumnDef="name">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Name </mat-header-cell>
+      <mat-cell *matCellDef="let t" class="title-cell"> {{ t.name }} </mat-cell>
+    </ng-container>
 
-  <ng-container matColumnDef="lastRun">
-    <mat-header-cell *matHeaderCellDef mat-sort-header> Last run </mat-header-cell>
-    <mat-cell *matCellDef="let t">
-      <span class="time-text">{{ t.lastRun ? (t.lastRun | relativeTime) : 'Never' }}</span>
-    </mat-cell>
-  </ng-container>
+    <ng-container matColumnDef="lastRun">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Last run </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        <span class="time-text">{{ t.lastRun ? (t.lastRun | relativeTime) : 'Never' }}</span>
+      </mat-cell>
+    </ng-container>
 
-  <ng-container matColumnDef="nextRun">
-    <mat-header-cell *matHeaderCellDef mat-sort-header> Next run </mat-header-cell>
-    <mat-cell *matCellDef="let t">
-      <span class="time-text">{{ t.nextRun ? (t.nextRun | relativeTime) : 'Pending' }}</span>
-    </mat-cell>
-  </ng-container>
+    <ng-container matColumnDef="nextRun">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Next run </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        <span class="time-text">{{ t.nextRun ? (t.nextRun | relativeTime) : 'Pending' }}</span>
+      </mat-cell>
+    </ng-container>
 
-  <ng-container matColumnDef="url">
-    <mat-header-cell *matHeaderCellDef> RSS URL </mat-header-cell>
-    <mat-cell *matCellDef="let t" class="url-cell"> {{ t.url }} </mat-cell>
-  </ng-container>
+    <ng-container matColumnDef="url">
+      <mat-header-cell *matHeaderCellDef> RSS URL </mat-header-cell>
+      <mat-cell *matCellDef="let t" class="url-cell"> {{ t.url }} </mat-cell>
+    </ng-container>
 
-  <ng-container matColumnDef="cronSchedule">
-    <mat-header-cell *matHeaderCellDef> Schedule </mat-header-cell>
-    <mat-cell *matCellDef="let t">
-      <code>{{ t.cronSchedule }}</code>
-    </mat-cell>
-  </ng-container>
+    <ng-container matColumnDef="cronSchedule">
+      <mat-header-cell *matHeaderCellDef> Schedule </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        <code>{{ t.cronSchedule }}</code>
+      </mat-cell>
+    </ng-container>
 
-  <ng-container matColumnDef="refreshStatus">
-    <mat-header-cell *matHeaderCellDef mat-sort-header> Status </mat-header-cell>
-    <mat-cell *matCellDef="let t">
-      @if (t.lastStatus === 'Success') {
-      <span class="time-text status-success-text">
-        Success<br />
-        <small class="status-success-subtext">(added {{ t.lastAddedCount }})</small>
-      </span>
-      }
-      @if (t.lastStatus === 'Failed') {
-      <span class="time-text status-failed-text">Failed
-        @if (t.lastError) {
-        <mat-icon [matTooltip]="t.lastError" class="status-error-icon">info</mat-icon>
+    <ng-container matColumnDef="refreshStatus">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Status </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        @if (t.lastStatus === 'Success') {
+        <span class="time-text status-success-text">
+          Success<br />
+          <small class="status-success-subtext">(added {{ t.lastAddedCount }})</small>
+        </span>
         }
-      </span>
-      }
-      @if (!t.lastStatus) {
-      <span class="time-text status-pending-text">Pending</span>
-      }
-    </mat-cell>
-  </ng-container>
+        @if (t.lastStatus === 'Failed') {
+        <span class="time-text status-failed-text">Failed
+          @if (t.lastError) {
+          <mat-icon [matTooltip]="t.lastError" class="status-error-icon">info</mat-icon>
+          }
+        </span>
+        }
+        @if (!t.lastStatus) {
+        <span class="time-text status-pending-text">Pending</span>
+        }
+      </mat-cell>
+    </ng-container>
 
-  <ng-container matColumnDef="status">
-    <mat-header-cell *matHeaderCellDef mat-sort-header> Enable </mat-header-cell>
-    <mat-cell *matCellDef="let t">
-      <mat-slide-toggle aria-label="Toggle tracker active status" [checked]="t.active"
-        (change)="toggleTracker(t.id, $event.checked)"></mat-slide-toggle>
-    </mat-cell>
-  </ng-container>
+    <ng-container matColumnDef="status">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Enable </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        <mat-slide-toggle aria-label="Toggle tracker active status" [checked]="t.active"
+          (change)="toggleTracker(t.id, $event.checked)"></mat-slide-toggle>
+      </mat-cell>
+    </ng-container>
 
-  <ng-container matColumnDef="actions">
-    <mat-header-cell *matHeaderCellDef> Action </mat-header-cell>
-    <mat-cell *matCellDef="let t">
-      <button mat-icon-button color="primary" (click)="editTracker(t)">
-        <mat-icon>edit</mat-icon>
-      </button>
-      <button mat-icon-button color="warn" (click)="deleteTracker(t.id)">
-        <mat-icon>delete</mat-icon>
-      </button>
-    </mat-cell>
-  </ng-container>
+    <ng-container matColumnDef="actions">
+      <mat-header-cell *matHeaderCellDef> Action </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        <button mat-icon-button color="primary" (click)="editTracker(t)">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button color="warn" (click)="deleteTracker(t.id)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </mat-cell>
+    </ng-container>
 
-  <mat-header-row *matHeaderRowDef="trackerColumns"></mat-header-row>
-  <mat-row *matRowDef="let row; columns: trackerColumns"></mat-row>
-</mat-table>
+    <mat-header-row *matHeaderRowDef="trackerColumns"></mat-header-row>
+    <mat-row *matRowDef="let row; columns: trackerColumns"></mat-row>
+  </mat-table>
+</div>
 
 @if (trackersDataSource.data.length === 0) {
 <div class="empty-state mat-elevation-z8">No trackers active. Add one to start indexing!</div>
@@ -122,57 +124,59 @@
   <span class="time-text">{{ totalCount }} torrents indexed</span>
 </div>
 
-<mat-table [dataSource]="torrentsDataSource" matSort #torrentSort="matSort" class="mat-elevation-z8 torrents-table">
-  <ng-container matColumnDef="title">
-    <mat-header-cell *matHeaderCellDef mat-sort-header> Title </mat-header-cell>
-    <mat-cell *matCellDef="let item" class="title-cell"> {{ item.title }} </mat-cell>
-  </ng-container>
+<div class="table-container">
+  <mat-table [dataSource]="torrentsDataSource" matSort #torrentSort="matSort" class="mat-elevation-z8 torrents-table">
+    <ng-container matColumnDef="title">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Title </mat-header-cell>
+      <mat-cell *matCellDef="let item" class="title-cell"> {{ item.title }} </mat-cell>
+    </ng-container>
 
-  <ng-container matColumnDef="category">
-    <mat-header-cell *matHeaderCellDef mat-sort-header> Category </mat-header-cell>
-    <mat-cell *matCellDef="let item">
-      <span class="time-text">{{ formatCategory(item.category) }}</span>
-    </mat-cell>
-  </ng-container>
+    <ng-container matColumnDef="category">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Category </mat-header-cell>
+      <mat-cell *matCellDef="let item">
+        <span class="time-text">{{ formatCategory(item.category) }}</span>
+      </mat-cell>
+    </ng-container>
 
-  <ng-container matColumnDef="tracker">
-    <mat-header-cell *matHeaderCellDef mat-sort-header> Tracker </mat-header-cell>
-    <mat-cell *matCellDef="let item">
-      <span class="time-text">{{ item.trackerName || 'Unknown' }}</span>
-    </mat-cell>
-  </ng-container>
+    <ng-container matColumnDef="tracker">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Tracker </mat-header-cell>
+      <mat-cell *matCellDef="let item">
+        <span class="time-text">{{ item.trackerName || 'Unknown' }}</span>
+      </mat-cell>
+    </ng-container>
 
-  <ng-container matColumnDef="size">
-    <mat-header-cell *matHeaderCellDef mat-sort-header> Size </mat-header-cell>
-    <mat-cell *matCellDef="let item">
-      <span class="time-text">{{ formatSize(item.size) }}</span>
-    </mat-cell>
-  </ng-container>
+    <ng-container matColumnDef="size">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Size </mat-header-cell>
+      <mat-cell *matCellDef="let item">
+        <span class="time-text">{{ formatSize(item.size) }}</span>
+      </mat-cell>
+    </ng-container>
 
-  <ng-container matColumnDef="pubDate">
-    <mat-header-cell *matHeaderCellDef mat-sort-header> Published </mat-header-cell>
-    <mat-cell *matCellDef="let item">
-      <span class="time-text">{{ item.pubDate || item.created_at | relativeTime }}</span>
-    </mat-cell>
-  </ng-container>
+    <ng-container matColumnDef="pubDate">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Published </mat-header-cell>
+      <mat-cell *matCellDef="let item">
+        <span class="time-text">{{ item.pubDate || item.created_at | relativeTime }}</span>
+      </mat-cell>
+    </ng-container>
 
-  <ng-container matColumnDef="action">
-    <mat-header-cell *matHeaderCellDef> Action </mat-header-cell>
-    <mat-cell *matCellDef="let item">
-      @if (item.comments) {
-      <a mat-icon-button color="accent" [href]="item.comments" target="_blank" title="Comments">
-        <mat-icon>comment</mat-icon>
-      </a>
-      }
-      <a mat-icon-button color="primary" [href]="item.link" target="_blank" title="Download">
-        <mat-icon>file_download</mat-icon>
-      </a>
-    </mat-cell>
-  </ng-container>
+    <ng-container matColumnDef="action">
+      <mat-header-cell *matHeaderCellDef> Action </mat-header-cell>
+      <mat-cell *matCellDef="let item">
+        @if (item.comments) {
+        <a mat-icon-button color="accent" [href]="item.comments" target="_blank" title="Comments">
+          <mat-icon>comment</mat-icon>
+        </a>
+        }
+        <a mat-icon-button color="primary" [href]="item.link" target="_blank" title="Download">
+          <mat-icon>file_download</mat-icon>
+        </a>
+      </mat-cell>
+    </ng-container>
 
-  <mat-header-row *matHeaderRowDef="torrentColumns"></mat-header-row>
-  <mat-row *matRowDef="let row; columns: torrentColumns"></mat-row>
-</mat-table>
+    <mat-header-row *matHeaderRowDef="torrentColumns"></mat-header-row>
+    <mat-row *matRowDef="let row; columns: torrentColumns"></mat-row>
+  </mat-table>
+</div>
 
 <ng-template #addTrackerDialog>
   <h2 mat-dialog-title>{{ editingTrackerId ? 'Edit tracker' : 'Add new tracker' }}</h2>

@@ -273,3 +273,43 @@ code {
   outline: none;
   color: #333;
 }
+
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 600px) {
+  .header-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .header-button-group {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .header-button-group button {
+    width: 100%;
+  }
+
+  .stats-bar {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.5rem;
+    padding: 1rem;
+  }
+
+  .trackers-table {
+    min-width: 800px;
+  }
+
+  .torrents-table {
+    min-width: 800px;
+  }
+}
