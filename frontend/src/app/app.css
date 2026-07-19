@@ -200,3 +200,88 @@ code {
     padding-bottom: 120px;
   }
 }
+
+/* Dark Mode Custom Overrides */
+:host-context(html.dark-theme) .info-box {
+  background-color: #162b43;
+  color: #e3f2fd;
+}
+
+:host-context(html.dark-theme) .info-box mat-icon,
+:host-context(html.dark-theme) .info-box a {
+  color: #64b5f6;
+}
+
+:host-context(html.dark-theme) .url-cell,
+:host-context(html.dark-theme) .time-text,
+:host-context(html.dark-theme) .empty-state mat-icon,
+:host-context(html.dark-theme) .empty-state {
+  color: #aaa;
+}
+
+:host-context(html.dark-theme) .empty-state {
+  background: #1e1e1e;
+}
+
+:host-context(html.dark-theme) code {
+  background: #2d2d2d;
+  color: #eee;
+}
+
+:host-context(html.dark-theme) .stats-bar {
+  background-color: rgba(30, 30, 30, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+}
+
+:host-context(html.dark-theme) .accent-text {
+  color: #7986cb;
+}
+
+:host-context(html.dark-theme) .trackers-table mat-row:hover,
+:host-context(html.dark-theme) .torrents-table mat-row:hover {
+  background-color: rgba(121, 134, 203, 0.15) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :host-context(html:not(.light-theme)) .info-box {
+    background-color: #162b43;
+    color: #e3f2fd;
+  }
+
+  :host-context(html:not(.light-theme)) .info-box mat-icon,
+  :host-context(html:not(.light-theme)) .info-box a {
+    color: #64b5f6;
+  }
+
+  :host-context(html:not(.light-theme)) .url-cell,
+  :host-context(html:not(.light-theme)) .time-text,
+  :host-context(html:not(.light-theme)) .empty-state mat-icon,
+  :host-context(html:not(.light-theme)) .empty-state {
+    color: #aaa;
+  }
+
+  :host-context(html:not(.light-theme)) .empty-state {
+    background: #1e1e1e;
+  }
+
+  :host-context(html:not(.light-theme)) code {
+    background: #2d2d2d;
+    color: #eee;
+  }
+
+  :host-context(html:not(.light-theme)) .stats-bar {
+    background-color: rgba(30, 30, 30, 0.95);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+  }
+
+  :host-context(html:not(.light-theme)) .accent-text {
+    color: #7986cb;
+  }
+
+  :host-context(html:not(.light-theme)) .trackers-table mat-row:hover,
+  :host-context(html:not(.light-theme)) .torrents-table mat-row:hover {
+    background-color: rgba(121, 134, 203, 0.15) !important;
+  }
+}

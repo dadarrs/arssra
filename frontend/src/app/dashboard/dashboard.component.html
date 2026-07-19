@@ -1,10 +1,10 @@
 <div class="header-actions">
   <h2>Active trackers</h2>
   <div class="header-button-group">
-    <button mat-raised-button color="accent" (click)="openProwlarrModal()">
+    <button mat-raised-button color="primary" (click)="openProwlarrModal()">
       <mat-icon>sync</mat-icon> Connect to Prowlarr
     </button>
-    <button mat-raised-button color="accent" (click)="openAddTrackerDialog()">
+    <button mat-raised-button color="primary" (click)="openAddTrackerDialog()">
       <mat-icon>add</mat-icon> Add tracker
     </button>
   </div>
@@ -68,7 +68,7 @@
     <ng-container matColumnDef="status">
       <mat-header-cell *matHeaderCellDef mat-sort-header> Enable </mat-header-cell>
       <mat-cell *matCellDef="let t">
-        <mat-slide-toggle aria-label="Toggle tracker active status" [checked]="t.active"
+        <mat-slide-toggle color="primary" aria-label="Toggle tracker active status" [checked]="t.active"
           (change)="toggleTracker(t.id, $event.checked)"></mat-slide-toggle>
       </mat-cell>
     </ng-container>
