@@ -338,6 +338,10 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     if (id === '2030') return 'Movies/SD (2030)';
     if (id === '2040') return 'Movies/HD (2040)';
     if (id === '3000') return 'Audio (3000)';
+    if (id === '3010') return 'Audio/MP3 (3010)';
+    if (id === '3020') return 'Audio/Video (3020)';
+    if (id === '3030') return 'Audio/Audiobook (3030)';
+    if (id === '3040') return 'Audio/Lossless (3040)';
     if (id === '5000') return 'TV (5000)';
     if (id === '5020') return 'TV/Foreign (5020)';
     if (id === '5030') return 'TV/SD (5030)';
