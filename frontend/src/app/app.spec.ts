@@ -5,6 +5,20 @@ import { App } from './app';
 
 describe('App', () => {
   beforeEach(async () => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: (query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: () => { /* empty */ }, // deprecated
+        removeListener: () => { /* empty */ }, // deprecated
+        addEventListener: () => { /* empty */ },
+        removeEventListener: () => { /* empty */ },
+        dispatchEvent: () => false,
+      }),
+    });
+
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [provideHttpClient(), provideHttpClientTesting()],

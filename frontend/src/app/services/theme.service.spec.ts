@@ -7,6 +7,20 @@ describe('ThemeService', () => {
   let mockDocument: any;
 
   beforeEach(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: (query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: () => { /* empty */ }, // deprecated
+        removeListener: () => { /* empty */ }, // deprecated
+        addEventListener: () => { /* empty */ },
+        removeEventListener: () => { /* empty */ },
+        dispatchEvent: () => false,
+      }),
+    });
+
     mockDocument = {
       documentElement: {
         style: {},

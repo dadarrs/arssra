@@ -15,21 +15,31 @@ export class ThemeService {
       this.theme.set(savedTheme);
     }
     
-    // Create an effect to watch for theme changes and update the document
+    // Listen for OS theme changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener('change', () => {
+      if (this.theme() === 'system') {
+        this.applyThemeToDocument('system');
+      }
+    });
+
+    // Create an effect to watch for user theme changes and update the document
     effect(() => {
       const currentTheme = this.theme();
       localStorage.setItem('theme-preference', currentTheme);
-      
-      const html = this.document.documentElement;
-      if (currentTheme === 'system') {
-        html.style.colorScheme = 'light dark';
-        html.classList.remove('dark-theme', 'light-theme');
-      } else {
-        html.style.colorScheme = currentTheme;
-        html.classList.toggle('dark-theme', currentTheme === 'dark');
-        html.classList.toggle('light-theme', currentTheme === 'light');
-      }
+      this.applyThemeToDocument(currentTheme);
     });
+  }
+
+  private applyThemeToDocument(theme: ThemeType) {
+    const html = this.document.documentElement;
+    const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    const isDark = theme === 'dark' || (theme === 'system' && isSystemDark);
+    
+    html.classList.toggle('dark-theme', isDark);
+    html.classList.toggle('light-theme', !isDark);
+    html.style.colorScheme = isDark ? 'dark' : 'light';
   }
 
   setTheme(newTheme: ThemeType) {
