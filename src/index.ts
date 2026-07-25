@@ -1,5 +1,8 @@
 import dotenv from 'dotenv';
+const _log = console.log;
+console.log = () => {};
 dotenv.config();
+console.log = _log;
 
 import express from 'express';
 import path from 'node:path';

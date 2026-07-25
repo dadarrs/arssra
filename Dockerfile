@@ -23,7 +23,7 @@ FROM node:${NODE_VERSION}-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3232
-ENV DATABASE_URL="file:/config/arssra.sqlite"
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 
 # Prisma requires openssl. We also need su-exec and shadow for dynamic PUID/PGID
 # We do not switch to USER node here because the entrypoint must run as root to change UID/GID
