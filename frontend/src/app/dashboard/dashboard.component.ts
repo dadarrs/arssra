@@ -114,8 +114,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     this.fetchDefinitions();
     this.fetchSchedules();
 
-    // Poll every 15 seconds to update Torrents and Trackers
-    this.refreshInterval = setInterval(() => this.backgroundRefresh(), 15000);
+    // Poll every 60 seconds to update Torrents and Trackers
+    this.refreshInterval = setInterval(() => this.backgroundRefresh(), 60000);
   }
 
   ngOnDestroy() {
