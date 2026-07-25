@@ -14,6 +14,7 @@ arssra is a powerful, lightweight service that bridges RSS feeds to Torznab APIs
 - [Supported trackers](#supported-trackers)
 - [Prowlarr integration](#prowlarr-integration)
 - [Installation](#installation)
+- [Security considerations](#security-considerations)
 - [Local development](#local-development)
 - [License](#license)
 
@@ -114,6 +115,12 @@ docker compose up -d
 | `PGID` | Group ID to run the app as | `1000` |
 | `TZ` | Timezone | `Etc/UTC` |
 | `PORT` | The internal port the webserver listens on | `3232` |
+
+## Security considerations
+
+> [!WARNING]  
+> **Do not expose arssra publicly to the internet.**  
+> This application is designed as an internal proxy for your home media server network. It does not have built-in authentication or rate limiting. Exposing it publicly could allow unauthorised access to your indexers or lead to abuse. If you must access it remotely, use a secure VPN (like Tailscale or WireGuard) or place it behind a secure reverse proxy with strict authentication and rate-limiting rules.
 
 ## Local development
 
