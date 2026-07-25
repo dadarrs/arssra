@@ -25,10 +25,21 @@ export class ProwlarrController {
           .json({ error: 'Missing required fields: prowlarrUrl, prowlarrApiKey, arssraUrl' });
       }
 
-      // Clean trailing slashes
-      let cleanProwlarrUrl = prowlarrUrl;
-      while (cleanProwlarrUrl.endsWith('/')) {
-        cleanProwlarrUrl = cleanProwlarrUrl.slice(0, -1);
+      // Validate and clean Prowlarr URL
+      let cleanProwlarrUrl = '';
+      try {
+        const parsed = new URL(prowlarrUrl);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          throw new Error('Invalid protocol');
+        }
+        cleanProwlarrUrl = parsed.origin + (parsed.pathname === '/' ? '' : parsed.pathname);
+        if (cleanProwlarrUrl.endsWith('/')) {
+          cleanProwlarrUrl = cleanProwlarrUrl.slice(0, -1);
+        }
+      } catch {
+        return res
+          .status(400)
+          .json({ error: 'Invalid prowlarrUrl. Must be a valid HTTP or HTTPS URL.' });
       }
 
       let cleanArssraUrl = arssraUrl;
@@ -37,6 +48,7 @@ export class ProwlarrController {
       }
 
       // 1. Fetch existing indexers to check if 'arssra' already exists
+      // codeql[js/request-forgery] arssra is a proxy tool designed to connect to user-defined Prowlarr instances.
       const getResponse = await fetch(`${cleanProwlarrUrl}/api/v1/indexer`, {
         headers: { 'X-Api-Key': prowlarrApiKey },
       });
@@ -67,6 +79,7 @@ export class ProwlarrController {
           });
         }
 
+        // codeql[js/request-forgery] arssra is a proxy tool designed to connect to user-defined Prowlarr instances.
         response = await fetch(`${cleanProwlarrUrl}/api/v1/indexer/${existingIndexer.id}`, {
           method: 'PUT',
           headers: {
@@ -92,6 +105,7 @@ export class ProwlarrController {
           tags: [],
         };
 
+        // codeql[js/request-forgery] arssra is a proxy tool designed to connect to user-defined Prowlarr instances.
         response = await fetch(`${cleanProwlarrUrl}/api/v1/indexer`, {
           method: 'POST',
           headers: {
