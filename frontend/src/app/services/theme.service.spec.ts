@@ -7,9 +7,8 @@ describe('ThemeService', () => {
   let mockDocument: any;
 
   beforeEach(() => {
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: (query: string) => ({
+    if (!(window as any).matchMedia) {
+      (window as any).matchMedia = (query: string) => ({
         matches: false,
         media: query,
         onchange: null,
@@ -18,8 +17,8 @@ describe('ThemeService', () => {
         addEventListener: () => { /* empty */ },
         removeEventListener: () => { /* empty */ },
         dispatchEvent: () => false,
-      }),
-    });
+      });
+    }
 
     mockDocument = {
       documentElement: {

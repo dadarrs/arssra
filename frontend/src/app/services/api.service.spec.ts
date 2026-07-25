@@ -29,7 +29,10 @@ describe('ApiService', () => {
 
   it('getTorrents should call correct URL without params', () => {
     service.getTorrents().subscribe();
-    const req = httpMock.expectOne('/api/json/torrents');
+    const req = httpMock.expectOne(request => 
+      request.url === '/api/json/torrents' && 
+      request.params.get('limit') === '50'
+    );
     expect(req.request.method).toBe('GET');
   });
 
@@ -38,7 +41,8 @@ describe('ApiService', () => {
     const req = httpMock.expectOne(request => 
       request.url === '/api/json/torrents' && 
       request.params.get('q') === 'batman' && 
-      request.params.get('offset') === '20'
+      request.params.get('offset') === '20' &&
+      request.params.get('limit') === '50'
     );
     expect(req.request.method).toBe('GET');
   });

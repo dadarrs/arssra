@@ -3,6 +3,7 @@ import {
   ChangeDetectorRef,
   Component,
   HostListener,
+  OnDestroy,
   OnInit,
   TemplateRef,
   ViewChild
@@ -51,12 +52,14 @@ import { RelativeTimePipe } from '../pipes/relative-time.pipe';
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
 })
-export class DashboardComponent implements OnInit, AfterViewInit {
+export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   public get dialog(): MatDialog {
     return this._dialog;
   }
   torrentsDataSource = new MatTableDataSource<any>();
   trackersDataSource = new MatTableDataSource<any>();
+
+  refreshInterval: any;
 
   definitions: any[] = [];
   schedules: any[] = [];
@@ -110,6 +113,31 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     this.fetchTrackers();
     this.fetchDefinitions();
     this.fetchSchedules();
+
+    // Poll every 15 seconds to update Torrents and Trackers
+    this.refreshInterval = setInterval(() => this.backgroundRefresh(), 15000);
+  }
+
+  ngOnDestroy() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
+  }
+
+  backgroundRefresh() {
+    this.fetchTrackers();
+    this.fetchSchedules();
+    
+    // Fetch exactly as many torrents as the user has already loaded so we don't break infinite scroll
+    const currentLimit = Math.max(50, this.torrentsDataSource.data.length);
+    this.api.getTorrents(this.searchQuery, 0, currentLimit).subscribe((res) => {
+      this.torrentsDataSource.data = res.items;
+      this.totalCount = res.totalCount;
+      if (this.torrentsDataSource.data.length >= res.totalCount) {
+        this.hasMoreData = false;
+      }
+      this.cdr.detectChanges();
+    });
   }
 
   fetchTorrents() {

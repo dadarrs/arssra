@@ -26,10 +26,13 @@ describe('DashboardComponent', () => {
 
   afterEach(() => {
     httpTestingController.verify();
+    if (fixture) {
+      fixture.destroy();
+    }
   });
 
   function expectInitialLoads() {
-    httpTestingController.expectOne('/api/json/torrents').flush({ items: [], totalCount: 0 });
+    httpTestingController.expectOne(req => req.url.startsWith('/api/json/torrents')).flush({ items: [], totalCount: 0 });
     httpTestingController.expectOne('/api/json/trackers').flush([]);
     httpTestingController.expectOne('/api/json/trackers/definitions').flush([{ id: 'def1', name: 'Def 1' }]);
     httpTestingController.expectOne('/api/json/trackers/schedules').flush([]);
@@ -55,7 +58,7 @@ describe('DashboardComponent', () => {
       component.onSearchModel('test search updated');
       vi.advanceTimersByTime(300); // Only one request should fire after debounce
       
-      const req = httpTestingController.expectOne('/api/json/torrents?q=test%20search%20updated');
+      const req = httpTestingController.expectOne(req => req.url.startsWith('/api/json/torrents') && req.params.get('q') === 'test search updated');
       req.flush({ items: [{ id: 1 }], totalCount: 1 });
       expect(component.torrentsDataSource.data).toHaveLength(1);
       vi.useRealTimers();
@@ -66,7 +69,7 @@ describe('DashboardComponent', () => {
       component.clearSearch();
       expect(component.searchQuery).toBe('');
       
-      const req = httpTestingController.expectOne('/api/json/torrents');
+      const req = httpTestingController.expectOne(req => req.url.startsWith('/api/json/torrents') && req.params.keys().length <= 1); // allow limit param
       req.flush({ items: [], totalCount: 0 });
     });
 
@@ -79,7 +82,7 @@ describe('DashboardComponent', () => {
       component.loadMoreTorrents();
       expect(component.isLoadingMore).toBe(true);
       
-      const req = httpTestingController.expectOne('/api/json/torrents?q=query&offset=1');
+      const req = httpTestingController.expectOne(req => req.url.startsWith('/api/json/torrents') && req.params.get('q') === 'query' && req.params.get('offset') === '1');
       req.flush({ items: [{ id: 2 }], totalCount: 10 });
       
       expect(component.torrentsDataSource.data).toHaveLength(2);
@@ -242,7 +245,7 @@ describe('DashboardComponent', () => {
       
       component.onScroll();
       
-      const req = httpTestingController.expectOne('/api/json/torrents?offset=1');
+      const req = httpTestingController.expectOne(req => req.url.startsWith('/api/json/torrents') && req.params.get('offset') === '1');
       req.flush({ items: [], totalCount: 100 });
       expect(component.isLoadingMore).toBe(false);
     });
@@ -259,7 +262,7 @@ describe('DashboardComponent', () => {
       component.onSearch({ target: { value: 'event search' } });
       vi.advanceTimersByTime(300);
       
-      const req = httpTestingController.expectOne('/api/json/torrents?q=event%20search');
+      const req = httpTestingController.expectOne(req => req.url.startsWith('/api/json/torrents') && req.params.get('q') === 'event search');
       req.flush({ items: [], totalCount: 0 });
       expect(component.searchQuery).toBe('event search');
       vi.useRealTimers();

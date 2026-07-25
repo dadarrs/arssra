@@ -8,13 +8,16 @@ import { Observable } from 'rxjs';
 export class ApiService {
   constructor(private readonly http: HttpClient) {}
 
-  getTorrents(query = '', offset = 0): Observable<any> {
+  getTorrents(query = '', offset = 0, limit = 50): Observable<any> {
     let params = new HttpParams();
     if (query) {
       params = params.set('q', query);
     }
     if (offset > 0) {
       params = params.set('offset', offset.toString());
+    }
+    if (limit > 0) {
+      params = params.set('limit', limit.toString());
     }
     return this.http.get<any>('/api/json/torrents', { params });
   }
