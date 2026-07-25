@@ -6,6 +6,17 @@ arssra is a powerful, lightweight service that bridges RSS feeds to Torznab APIs
 
 ---
 
+## Table of Contents
+
+- [Why it exists](#why-it-exists)
+- [Screenshots](#screenshots)
+- [Features](#features)
+- [Supported trackers](#supported-trackers)
+- [Prowlarr integration](#prowlarr-integration)
+- [Installation](#installation)
+- [Local development](#local-development)
+- [License](#license)
+
 ## Why it exists
 
 Some trackers are anti-automation and only provide RSS feeds. While RSS is useful for discovering new releases, the categories do not always align correctly with the *arr stack (Radarr, Sonarr, etc.). Furthermore, RSS feeds are inherently ephemeral; older releases quickly fall off the feed and can no longer be automated. 
@@ -56,9 +67,16 @@ If you prefer to configure your *arr applications manually, use the following To
 - **URL:** `http://<your-arssra-ip>:3232`
 - **API Key:** Leave blank (or enter any string if required by the client)
 
-## Installation (Docker)
+## Installation
 
-The easiest and recommended way to install arssra is via Docker Compose.
+### Unraid
+
+For Unraid users, an installation template is available in the following repository:
+[https://github.com/dadarrs/unraid-templates](https://github.com/dadarrs/unraid-templates).
+
+### Docker Compose
+
+The easiest and recommended way to install arssra on other systems is via Docker Compose.
 
 1. Create a `docker-compose.yml` file:
 
