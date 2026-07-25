@@ -6,6 +6,17 @@ arssra is a powerful, lightweight service that bridges RSS feeds to Torznab APIs
 
 ---
 
+## Table of Contents
+
+- [Why it exists](#why-it-exists)
+- [Screenshots](#screenshots)
+- [Features](#features)
+- [Supported trackers](#supported-trackers)
+- [Prowlarr integration](#prowlarr-integration)
+- [Installation](#installation)
+- [Local development](#local-development)
+- [License](#license)
+
 ## Why it exists
 
 Some trackers are anti-automation and only provide RSS feeds. While RSS is useful for discovering new releases, the categories do not always align correctly with the *arr stack (Radarr, Sonarr, etc.). Furthermore, RSS feeds are inherently ephemeral; older releases quickly fall off the feed and can no longer be automated. 
