@@ -1,0 +1,11 @@
+<mat-toolbar color="primary" class="app-toolbar">
+  <span>arssra</span>
+  <span class="spacer"></span>
+  <button mat-icon-button (click)="toggleTheme()" [matTooltip]="'Theme: ' + themeService.theme()">
+    <mat-icon>{{ getThemeIcon() }}</mat-icon>
+  </button>
+</mat-toolbar>
+
+<div class="app-container">
+  <app-dashboard></app-dashboard>
+</div>

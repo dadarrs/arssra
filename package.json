@@ -1,0 +1,64 @@
+{
+  "name": "arssra",
+  "version": "0.0.1",
+  "description": "Automated RSS to Torznab",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "dev": "nodemon --watch src src/index.ts",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\"",
+    "pretest": "mkdir -p config && npx prisma db push --skip-generate",
+    "test": "vitest run src/",
+    "test:watch": "vitest src/",
+    "lint": "eslint \"src/**/*.{ts,js}\"",
+    "prepare": "husky",
+    "docs:screenshot": "ts-node scripts/capture-screenshots.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "lint-staged": {
+    "src/**/*.{ts,js}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "frontend/src/**/*.{ts,html}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "**/*.json": [
+      "prettier --write"
+    ]
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "node-cron": "^4.5.0",
+    "rss-parser": "^3.13.0",
+    "xmlbuilder2": "^4.0.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.0.1",
+    "@types/node-cron": "^3.0.11",
+    "@types/supertest": "^7.2.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "^10.6.0",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
+    "nodemon": "^3.1.14",
+    "prettier": "^3.9.5",
+    "prisma": "^5.22.0",
+    "puppeteer": "^25.3.0",
+    "supertest": "^7.2.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.63.0",
+    "vitest": "^4.1.10"
+  }
+}

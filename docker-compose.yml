@@ -1,0 +1,13 @@
+services:
+  arssra:
+    image: ghcr.io/dadarrs/arssra:latest
+    container_name: arssra
+    ports:
+      - "3232:3232"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ./config:/app/config
+    restart: unless-stopped
