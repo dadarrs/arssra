@@ -56,9 +56,16 @@ If you prefer to configure your *arr applications manually, use the following To
 - **URL:** `http://<your-arssra-ip>:3232`
 - **API Key:** Leave blank (or enter any string if required by the client)
 
-## Installation (Docker)
+## Installation
 
-The easiest and recommended way to install arssra is via Docker Compose.
+### Unraid
+
+For Unraid users, an installation template is available in the following repository:
+[https://github.com/dadarrs/unraid-templates](https://github.com/dadarrs/unraid-templates).
+
+### Docker Compose
+
+The easiest and recommended way to install arssra on other systems is via Docker Compose.
 
 1. Create a `docker-compose.yml` file:
 
