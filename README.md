@@ -2,9 +2,15 @@
 
 **Automated RSS to Torznab**
 
-arssra is a powerful, lightweight service that bridges RSS feeds to Torznab APIs. It seamlessly integrates with Prowlarr to automate torrent indexing, fetching, and syncing, all wrapped in a responsive and native-feeling Material UI dashboard.
+arssra is a powerful, lightweight service that bridges RSS feeds to Torznab APIs. It seamlessly integrates with Prowlarr to automate torrent indexing, fetching, and syncing, all wrapped in a responsive Material UI dashboard.
 
 ---
+
+## Why it exists
+
+Some trackers are anti-automation and only provide RSS feeds. While RSS is useful for discovering new releases, the categories do not always align correctly with the *arr stack (Radarr, Sonarr, etc.). Furthermore, RSS feeds are inherently ephemeral; older releases quickly fall off the feed and can no longer be automated. 
+
+arssra solves this by acting as a bridge. It continuously caches your RSS feeds into a persistent, searchable database and standardises the metadata. This historical backlog is then served via a fully compliant Torznab API, making it vastly more useful for automating older releases going forwards.
 
 ## Screenshots
 
@@ -36,14 +42,16 @@ arssra features a fully automated integration with Prowlarr. Instead of manually
 1. Open the arssra web dashboard.
 2. Click the **Connect to Prowlarr** button at the top of the page.
 3. Enter your Prowlarr URL (e.g., `http://192.168.1.100:9696`) and your Prowlarr API Key.
-4. Enter your arssra URL so Prowlarr knows where to connect back (e.g., `http://192.168.1.100:3232`).
+4. Enter your arssra URL so Prowlarr knows where to connect back (e.g., `http://192.168.1.100:3232`). *Note: If both arssra and Prowlarr are running on the same custom Docker network, you can use the container hostname instead (e.g., `http://arssra:3232`). This will not work on the default bridge network.*
 5. Click **Auto-Sync**. 
 
 arssra will automatically create or update a dedicated "arssra" Torznab indexer inside your Prowlarr instance. Prowlarr will then seamlessly pass this indexer down to Sonarr and Radarr.
 
 ### Manual Torznab configuration
 
-If you prefer not to use Prowlarr, or want to configure an *arr application manually, use the following Torznab details:
+Although arssra is designed with Prowlarr in mind, Prowlarr is completely optional. Because arssra acts as a standard Torznab indexer, it is fully compatible directly with Sonarr, Radarr, Lidarr, and any other application that supports Torznab.
+
+If you prefer to configure your *arr applications manually, use the following Torznab details:
 
 - **URL:** `http://<your-arssra-ip>:3232`
 - **API Key:** Leave blank (or enter any string if required by the client)
@@ -78,6 +86,8 @@ docker compose up -d
 
 3. Access the web dashboard at `http://localhost:3232`.
 
+> **Important:** Always ensure you mount the `/config` volume as shown above. This directory contains your persistent SQLite database and tracker configurations. If this is not mounted, your data will be permanently wiped out when the container is recreated or updated.
+
 ### Environment variables
 
 | Variable | Description | Default |
@@ -85,6 +95,7 @@ docker compose up -d
 | `PUID` | User ID to run the app as (for file permissions) | `1000` |
 | `PGID` | Group ID to run the app as | `1000` |
 | `TZ` | Timezone | `Etc/UTC` |
+| `PORT` | The internal port the webserver listens on | `3232` |
 
 ## Local development
 
