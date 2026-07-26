@@ -1,6 +1,6 @@
 {
   "name": "arssra",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Automated RSS to Torznab",
   "main": "dist/index.js",
   "scripts": {
@@ -36,14 +36,14 @@
     "@prisma/client": "^5.22.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "node-cron": "^4.5.0",
+    "node-cron": "^4.6.0",
     "rss-parser": "^3.13.0",
     "xmlbuilder2": "^4.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/express": "^5.0.6",
-    "@types/node": "^26.0.1",
+    "@types/node": "^26.1.1",
     "@types/node-cron": "^3.0.11",
     "@types/supertest": "^7.2.0",
     "@vitest/coverage-v8": "^4.1.10",
@@ -58,7 +58,7 @@
     "supertest": "^7.2.2",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.63.0",
+    "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.10"
   }
 }

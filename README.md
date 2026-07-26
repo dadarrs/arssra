@@ -8,15 +8,24 @@ arssra is a powerful, lightweight service that bridges RSS feeds to Torznab APIs
 
 ## Table of Contents
 
-- [Why it exists](#why-it-exists)
-- [Screenshots](#screenshots)
-- [Features](#features)
-- [Supported trackers](#supported-trackers)
-- [Prowlarr integration](#prowlarr-integration)
-- [Installation](#installation)
-- [Security considerations](#security-considerations)
-- [Local development](#local-development)
-- [License](#license)
+- [arssra](#arssra)
+  - [Table of Contents](#table-of-contents)
+  - [Why it exists](#why-it-exists)
+  - [Screenshots](#screenshots)
+  - [Features](#features)
+  - [Supported trackers](#supported-trackers)
+  - [Prowlarr integration](#prowlarr-integration)
+    - [Manual Torznab configuration](#manual-torznab-configuration)
+  - [Installation](#installation)
+    - [Unraid](#unraid)
+    - [Docker Compose](#docker-compose)
+    - [Environment variables](#environment-variables)
+  - [Security considerations](#security-considerations)
+  - [Local development](#local-development)
+    - [Prerequisites](#prerequisites)
+    - [Backend setup](#backend-setup)
+    - [Frontend setup](#frontend-setup)
+  - [License](#license)
 
 ## Why it exists
 
@@ -127,7 +136,7 @@ docker compose up -d
 If you want to contribute or run the app locally from source, you can set up the backend and frontend separately.
 
 ### Prerequisites
-- Node.js (v24+)
+- Node.js (v26+)
 - npm
 
 ### Backend setup

@@ -29,6 +29,7 @@ describe('TorznabController', () => {
     controller = new TorznabController();
     app.get('/api', controller.handleRequest);
     app.get('/api/json/torrents', controller.getJsonTorrents);
+    app.get('/api/download', controller.proxyDownload);
   });
 
   describe('getJsonTorrents', () => {
@@ -91,9 +92,8 @@ describe('TorznabController', () => {
       expect(res.text).toContain('<title>Test Movie</title>');
       expect(res.text).toContain('<category>2000</category>');
       expect(res.text).toContain('<category>2040</category>');
-      expect(res.text).toContain(
-        '<enclosure url="http://dl" length="1024" type="application/x-bittorrent"/>',
-      );
+      expect(res.text).toContain('/download?url=http%3A%2F%2Fdl');
+      expect(res.text).toContain('length="1024" type="application/x-bittorrent"');
     });
 
     it('should generate XML using tvsearch', async () => {
@@ -112,6 +112,56 @@ describe('TorznabController', () => {
       const res = await request(app).get('/api');
       expect(res.status).toBe(200);
       expect(mockGetTorrents).toHaveBeenCalledWith(50, 0, undefined);
+    });
+  });
+
+  describe('proxyDownload', () => {
+    it('should return 400 if url is missing', async () => {
+      const res = await request(app).get('/api/download');
+      expect(res.status).toBe(400);
+      expect(res.text).toBe('Missing url parameter');
+    });
+
+    it('should return 400 for invalid protocols', async () => {
+      const res = await request(app).get('/api/download?url=file:///etc/passwd');
+      expect(res.status).toBe(400);
+      expect(res.text).toBe('Invalid protocol');
+    });
+
+    it('should proxy successful download and forward headers', async () => {
+      const mockBuffer = new ArrayBuffer(8);
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers({
+          'content-type': 'application/x-bittorrent',
+          'content-disposition': 'attachment; filename="test.torrent"',
+        }),
+        arrayBuffer: vi.fn().mockResolvedValue(mockBuffer),
+      });
+
+      const res = await request(app).get('/api/download?url=http://tracker.com/file.torrent');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toBe('application/x-bittorrent');
+      expect(res.headers['content-disposition']).toBe('attachment; filename="test.torrent"');
+      expect(global.fetch).toHaveBeenCalledWith(
+        'http://tracker.com/file.torrent',
+        expect.any(Object),
+      );
+    });
+
+    it('should handle fetch errors gracefully', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+      });
+
+      const res = await request(app).get('/api/download?url=http://tracker.com/notfound');
+
+      expect(res.status).toBe(404);
+      expect(res.text).toBe('Error fetching torrent: Not Found');
     });
   });
 });

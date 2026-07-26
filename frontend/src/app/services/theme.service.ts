@@ -10,36 +10,44 @@ export class ThemeService {
   public readonly theme = signal<ThemeType>('system');
 
   constructor(@Inject(DOCUMENT) private readonly document: Document) {
-    const savedTheme = localStorage.getItem('theme-preference') as ThemeType;
-    if (savedTheme) {
-      this.theme.set(savedTheme);
-    }
+    try {
+      const savedTheme = globalThis.localStorage?.getItem('theme-preference') as ThemeType;
+      if (savedTheme) {
+        this.theme.set(savedTheme);
+      }
+    } catch { /* empty */ }
     
     // Listen for OS theme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    mediaQuery.addEventListener('change', () => {
-      if (this.theme() === 'system') {
-        this.applyThemeToDocument('system');
-      }
-    });
+    try {
+      const mediaQuery = globalThis.matchMedia?.('(prefers-color-scheme: dark)');
+      mediaQuery?.addEventListener('change', () => {
+        if (this.theme() === 'system') {
+          this.applyThemeToDocument('system');
+        }
+      });
+    } catch { /* empty */ }
 
     // Create an effect to watch for user theme changes and update the document
     effect(() => {
       const currentTheme = this.theme();
-      localStorage.setItem('theme-preference', currentTheme);
+      try {
+        globalThis.localStorage?.setItem('theme-preference', currentTheme);
+      } catch { /* empty */ }
       this.applyThemeToDocument(currentTheme);
     });
   }
 
   private applyThemeToDocument(theme: ThemeType) {
-    const html = this.document.documentElement;
-    const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    const isDark = theme === 'dark' || (theme === 'system' && isSystemDark);
-    
-    html.classList.toggle('dark-theme', isDark);
-    html.classList.toggle('light-theme', !isDark);
-    html.style.colorScheme = isDark ? 'dark' : 'light';
+    try {
+      const html = this.document.documentElement;
+      const isSystemDark = globalThis.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false;
+      
+      const isDark = theme === 'dark' || (theme === 'system' && isSystemDark);
+      
+      html.classList.toggle('dark-theme', isDark);
+      html.classList.toggle('light-theme', !isDark);
+      html.style.colorScheme = isDark ? 'dark' : 'light';
+    } catch { /* empty */ }
   }
 
   setTheme(newTheme: ThemeType) {

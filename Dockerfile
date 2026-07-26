@@ -1,4 +1,4 @@
-ARG NODE_VERSION=24
+ARG NODE_VERSION=26
 
 # Stage 1: Build the backend
 FROM node:${NODE_VERSION}-alpine AS backend-build
