@@ -15,6 +15,7 @@ export function configureRoutes(rssService: RssService): Router {
   router.post('/json/prowlarr/sync', prowlarrController.syncToProwlarr.bind(prowlarrController));
 
   router.get('/json/torrents', torznabController.getJsonTorrents);
+  router.get('/download', torznabController.proxyDownload);
   router.get('/', torznabController.handleRequest);
 
   router.get('/json/trackers/schedules', trackerController.getSchedules);

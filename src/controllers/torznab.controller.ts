@@ -9,6 +9,7 @@ export class TorznabController {
     this.repository = new TorrentRepository();
     this.handleRequest = this.handleRequest.bind(this);
     this.getJsonTorrents = this.getJsonTorrents.bind(this);
+    this.proxyDownload = this.proxyDownload.bind(this);
   }
 
   private generateTorznabResponse(
@@ -95,11 +96,12 @@ export class TorznabController {
         .txt(item.description || '')
         .up();
 
-      const downloadUrl = item.enclosure_url || item.link;
-      if (downloadUrl) {
+      const originalDownloadUrl = item.enclosure_url || item.link;
+      if (originalDownloadUrl) {
+        const proxiedUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}/download?url=${encodeURIComponent(originalDownloadUrl)}`;
         itemNode
           .ele('enclosure', {
-            url: downloadUrl,
+            url: proxiedUrl,
             length: item.enclosure_length?.toString() || item.size?.toString() || '0',
             type: item.enclosure_type || 'application/x-bittorrent',
           })
@@ -238,5 +240,53 @@ export class TorznabController {
       limit: parsedLimit,
       offset: parsedOffset,
     });
+  }
+
+  public async proxyDownload(req: Request, res: Response) {
+    const targetUrl = req.query.url as string;
+    if (!targetUrl) {
+      return res.status(400).send('Missing url parameter');
+    }
+
+    try {
+      // Validating protocol
+      const parsed = new URL(targetUrl);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return res.status(400).send('Invalid protocol');
+      }
+
+      const response = await fetch(targetUrl, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          Accept:
+            'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+          'Sec-Ch-Ua-Mobile': '?0',
+          'Sec-Ch-Ua-Platform': '"Windows"',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'none',
+          'Sec-Fetch-User': '?1',
+          'Upgrade-Insecure-Requests': '1',
+        },
+      });
+
+      if (!response.ok) {
+        return res.status(response.status).send(`Error fetching torrent: ${response.statusText}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (contentType) res.setHeader('Content-Type', contentType);
+
+      const contentDisposition = response.headers.get('content-disposition');
+      if (contentDisposition) res.setHeader('Content-Disposition', contentDisposition);
+
+      const buffer = await response.arrayBuffer();
+      res.send(Buffer.from(buffer));
+    } catch (error: any) {
+      res.status(500).send(`Proxy error: ${error.message}`);
+    }
   }
 }

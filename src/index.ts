@@ -31,7 +31,6 @@ class App {
     this.app.use(express.static(frontendPath));
 
     // Fallback for Angular routing
-    // codeql[js/missing-rate-limiting] arssra is a self-hosted internal tool; rate limiting should be handled by a reverse proxy if exposed publicly
     this.app.use((_req, res) => {
       res.sendFile(path.join(frontendPath, 'index.html'));
     });
