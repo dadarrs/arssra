@@ -59,6 +59,10 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   torrentsDataSource = new MatTableDataSource<any>();
   trackersDataSource = new MatTableDataSource<any>();
 
+  get hasActiveTrackers(): boolean {
+    return this.trackersDataSource.data.some(t => t.active);
+  }
+
   refreshInterval: any;
 
   definitions: any[] = [];

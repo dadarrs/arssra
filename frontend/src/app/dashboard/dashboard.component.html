@@ -1,9 +1,11 @@
 <div class="header-actions">
   <h2>Active trackers</h2>
   <div class="header-button-group">
-    <button mat-raised-button color="primary" (click)="openProwlarrModal()">
-      <mat-icon>sync</mat-icon> Connect to Prowlarr
-    </button>
+    <div [matTooltip]="!hasActiveTrackers ? 'Enable at least one tracker to connect to Prowlarr' : ''">
+      <button mat-raised-button color="primary" (click)="openProwlarrModal()" [disabled]="!hasActiveTrackers">
+        <mat-icon>sync</mat-icon> Connect to Prowlarr
+      </button>
+    </div>
     <button mat-raised-button color="primary" (click)="openAddTrackerDialog()">
       <mat-icon>add</mat-icon> Add tracker
     </button>
@@ -252,6 +254,13 @@
   <mat-dialog-content>
     <p>Automatically sync arssra to Prowlarr as a Generic Torznab indexer.</p>
 
+    @if (!hasActiveTrackers) {
+    <div class="info-box sync-status-box error" style="margin-bottom: 16px;">
+      <mat-icon class="sync-status-icon error">warning</mat-icon>
+      <span>You must add and enable at least one tracker before syncing to Prowlarr.</span>
+    </div>
+    }
+
     <mat-form-field appearance="fill" class="full-width-field">
       <mat-label>Prowlarr URL</mat-label>
       <input id="prowlarr-url" aria-label="Prowlarr URL" matInput type="url" [(ngModel)]="prowlarrUrl"
@@ -297,7 +306,7 @@
   <mat-dialog-actions align="end">
     <button mat-button mat-dialog-close>Close</button>
     <button mat-raised-button color="primary" (click)="syncToProwlarr()"
-      [disabled]="!prowlarrUrl || !prowlarrApiKey || !arssraUrl || prowlarrSyncStatus === 'syncing'">
+      [disabled]="!prowlarrUrl || !prowlarrApiKey || !arssraUrl || prowlarrSyncStatus === 'syncing' || !hasActiveTrackers">
       {{ prowlarrSyncStatus === 'syncing' ? 'Syncing...' : 'Auto-Sync' }}
     </button>
   </mat-dialog-actions>
