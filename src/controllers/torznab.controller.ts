@@ -1,12 +1,16 @@
 import { Request, Response } from 'express';
 import { create } from 'xmlbuilder2';
 import { TorrentRepository } from '../repositories/torrent.repository';
+import { TrackerRepository } from '../repositories/tracker.repository';
+import { TRACKERS } from '../trackers/definitions';
 
 export class TorznabController {
   private readonly repository: TorrentRepository;
+  private readonly trackerRepo: TrackerRepository;
 
   constructor() {
     this.repository = new TorrentRepository();
+    this.trackerRepo = new TrackerRepository();
     this.handleRequest = this.handleRequest.bind(this);
     this.getJsonTorrents = this.getJsonTorrents.bind(this);
     this.proxyDownload = this.proxyDownload.bind(this);
@@ -17,6 +21,7 @@ export class TorznabController {
     items: any[],
     offset: number,
     totalCount: number,
+    trackerUrlMap: Map<string, string>,
   ): string {
     const root = create({ version: '1.0', encoding: 'UTF-8' })
       .ele('rss', {
@@ -61,6 +66,14 @@ export class TorznabController {
         }
       }
 
+      let itemSize = item.size;
+      if (!itemSize || itemSize === 0) {
+        const def = TRACKERS.find((t) => t.name === item.trackerName);
+        if (def?.parser?.parseSize) {
+          itemSize = def.parser.parseSize(item, item.description || '');
+        }
+      }
+
       const itemNode = root
         .ele('item')
         .ele('title')
@@ -79,7 +92,7 @@ export class TorznabController {
         .txt(pubDateStr)
         .up()
         .ele('size')
-        .txt(item.size?.toString() || '0')
+        .txt(itemSize?.toString() || '0')
         .up();
 
       const itemCategoryStr = item.category || '2000';
@@ -96,13 +109,24 @@ export class TorznabController {
         .txt(item.description || '')
         .up();
 
-      const originalDownloadUrl = item.enclosure_url || item.link;
+      let originalDownloadUrl = item.enclosure_url || item.link;
+      if (originalDownloadUrl && item.trackerName) {
+        const currentTrackerUrl = trackerUrlMap.get(item.trackerName);
+        const def = TRACKERS.find((t) => t.name === item.trackerName);
+        if (def?.parser?.rewriteDownloadUrl && currentTrackerUrl) {
+          originalDownloadUrl = def.parser.rewriteDownloadUrl(
+            originalDownloadUrl,
+            currentTrackerUrl,
+          );
+        }
+      }
+
       if (originalDownloadUrl) {
         const proxiedUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}/download?url=${encodeURIComponent(originalDownloadUrl)}`;
         itemNode
           .ele('enclosure', {
             url: proxiedUrl,
-            length: item.enclosure_length?.toString() || item.size?.toString() || '0',
+            length: item.enclosure_length?.toString() || itemSize?.toString() || '0',
             type: item.enclosure_type || 'application/x-bittorrent',
           })
           .up();
@@ -213,7 +237,16 @@ export class TorznabController {
       totalCount = await this.repository.countTorrents(categories);
     }
 
-    const xmlResponse = this.generateTorznabResponse(req, items, parsedOffset, totalCount);
+    const trackers = await this.trackerRepo.getAllTrackers();
+    const trackerUrlMap = new Map(trackers.map((t) => [t.name, t.url]));
+
+    const xmlResponse = this.generateTorznabResponse(
+      req,
+      items,
+      parsedOffset,
+      totalCount,
+      trackerUrlMap,
+    );
     res.set('Content-Type', 'text/xml');
     res.send(xmlResponse);
   }
@@ -234,8 +267,23 @@ export class TorznabController {
       totalCount = await this.repository.countTorrents();
     }
 
+    const trackers = await this.trackerRepo.getAllTrackers();
+    const trackerUrlMap = new Map(trackers.map((t) => [t.name, t.url]));
+
+    const rewrittenItems = items.map((item) => {
+      let downloadUrl = item.enclosure_url || item.link;
+      if (downloadUrl && item.trackerName) {
+        const currentTrackerUrl = trackerUrlMap.get(item.trackerName);
+        const def = TRACKERS.find((t) => t.name === item.trackerName);
+        if (def?.parser?.rewriteDownloadUrl && currentTrackerUrl) {
+          downloadUrl = def.parser.rewriteDownloadUrl(downloadUrl, currentTrackerUrl);
+        }
+      }
+      return { ...item, downloadUrl };
+    });
+
     res.json({
-      items,
+      items: rewrittenItems,
       totalCount,
       limit: parsedLimit,
       offset: parsedOffset,

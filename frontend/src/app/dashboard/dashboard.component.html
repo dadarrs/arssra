@@ -151,6 +151,14 @@
       <mat-header-cell *matHeaderCellDef mat-sort-header> Size </mat-header-cell>
       <mat-cell *matCellDef="let item">
         <span class="time-text">{{ formatSize(item.size) }}</span>
+        @if (!item.size) {
+        <mat-icon
+          style="font-size: 16px; width: 16px; height: 16px; margin-left: 4px; opacity: 0.6; cursor: help; vertical-align: text-bottom;"
+          matTooltip="Tracker did not provide a size. A smart estimated size is sent to Prowlarr/arrs to safely bypass size limits."
+        >
+          info
+        </mat-icon>
+        }
       </mat-cell>
     </ng-container>
 
@@ -205,7 +213,7 @@
     <mat-form-field appearance="fill" class="full-width-field">
       <mat-label for="tracker-url">RSS URL</mat-label>
       <input id="tracker-url" aria-label="RSS URL" matInput type="text" [(ngModel)]="newTrackerUrl"
-        placeholder="https://tvchaosuk.com/rss/123.aBcDeFgHiJkLmNoPqRsT" />
+        [placeholder]="selectedTrackerDef?.placeholderUrl || 'https://example.com/rss'" />
     </mat-form-field>
     }
 
@@ -220,12 +228,10 @@
     </mat-form-field>
     }
 
-    @if (newTrackerDefId === 'tvchaosuk') {
+    @if (selectedTrackerDef?.infoHtml) {
     <div class="info-box">
       <mat-icon>info</mat-icon>
-      <span>You can get your custom RSS feed URL from
-        <a href="https://tvchaosuk.com/rss/index" target="_blank"
-          rel="noopener noreferrer">https://tvchaosuk.com/rss/index</a>.</span>
+      <span [innerHTML]="selectedTrackerDef.infoHtml"></span>
     </div>
     }
   </mat-dialog-content>

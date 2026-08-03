@@ -76,6 +76,10 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   editingTrackerId: number | null = null;
   trackerToDelete: number | null = null;
 
+  get selectedTrackerDef(): any {
+    return this.definitions.find((d) => d.id === this.newTrackerDefId);
+  }
+
   prowlarrUrl = 'http://localhost:9696';
   prowlarrApiKey = '';
   arssraUrl = 'http://localhost:3232';
