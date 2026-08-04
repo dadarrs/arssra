@@ -65,4 +65,23 @@ export class TorrentRepository {
     }
     return await prisma.torrent.count({ where });
   }
+
+  public async getCountsByTracker(): Promise<Record<string, number>> {
+    const counts = await prisma.torrent.groupBy({
+      by: ['trackerName'],
+      _count: {
+        _all: true,
+      },
+    });
+
+    return counts.reduce(
+      (acc, curr) => {
+        if (curr.trackerName) {
+          acc[curr.trackerName] = curr._count._all;
+        }
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+  }
 }

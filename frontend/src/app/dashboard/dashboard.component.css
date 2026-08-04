@@ -63,6 +63,10 @@
   padding-right: 16px;
 }
 
+.trackers-table .mat-column-torrentCount {
+  flex: 0 0 100px;
+}
+
 .trackers-table .mat-column-lastRun,
 .trackers-table .mat-column-nextRun {
   flex: 0 0 160px;

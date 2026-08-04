@@ -1,18 +1,24 @@
+import { TorrentRepository } from '../repositories/torrent.repository';
 import { TrackerRepository } from '../repositories/tracker.repository';
 import { calculateNextRun } from '../utils/cron.utils';
 import { RssService } from './rss.service';
 
 export class TrackerService {
   private readonly repository: TrackerRepository;
+  private readonly torrentRepo: TorrentRepository;
 
   constructor(private readonly rssService: RssService) {
     this.repository = new TrackerRepository();
+    this.torrentRepo = new TorrentRepository();
   }
 
   async getAllTrackers() {
     const trackers = await this.repository.getAllTrackers();
+    const countMap = await this.torrentRepo.getCountsByTracker();
+
     return trackers.map((t: any) => ({
       ...t,
+      torrentCount: countMap[t.name] || 0,
       nextRun: t.active ? calculateNextRun(t.lastRun, t.cronSchedule) : null,
     }));
   }

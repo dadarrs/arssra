@@ -91,7 +91,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   hasMoreData = true;
   private searchTimer: any;
 
-  trackerColumns: string[] = ['name', 'lastRun', 'nextRun', 'refreshStatus', 'status', 'actions'];
+  trackerColumns: string[] = ['name', 'lastRun', 'nextRun', 'refreshStatus', 'torrentCount', 'status', 'actions'];
   torrentColumns: string[] = ['title', 'tracker', 'category', 'size', 'pubDate', 'action'];
 
   @ViewChild('trackerSort') trackerSort!: MatSort;

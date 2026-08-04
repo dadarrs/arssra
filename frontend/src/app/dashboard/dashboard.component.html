@@ -19,6 +19,11 @@
       <mat-cell *matCellDef="let t" class="title-cell"> {{ t.name }} </mat-cell>
     </ng-container>
 
+    <ng-container matColumnDef="torrentCount">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Releases </mat-header-cell>
+      <mat-cell *matCellDef="let t"> <span class="time-text">{{ t.torrentCount || 0 }}</span> </mat-cell>
+    </ng-container>
+
     <ng-container matColumnDef="lastRun">
       <mat-header-cell *matHeaderCellDef mat-sort-header> Last run </mat-header-cell>
       <mat-cell *matCellDef="let t">

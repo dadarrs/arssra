@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   mockCount: vi.fn(),
   mockCreate: vi.fn(),
   mockUpdate: vi.fn(),
+  mockGroupBy: vi.fn(),
 }));
 
 vi.mock('../config/db.config', () => {
@@ -18,6 +19,7 @@ vi.mock('../config/db.config', () => {
         count: mocks.mockCount,
         create: mocks.mockCreate,
         update: mocks.mockUpdate,
+        groupBy: mocks.mockGroupBy,
       },
     },
   };
@@ -143,6 +145,23 @@ describe('TorrentRepository', () => {
         },
       });
       expect(res).toBe(5);
+    });
+  });
+
+  describe('getCountsByTracker', () => {
+    it('should group and return counts by tracker name', async () => {
+      mocks.mockGroupBy.mockResolvedValue([
+        { trackerName: 'TV Vault', _count: { _all: 50 } },
+        { trackerName: 'TV Chaos UK', _count: { _all: 10 } },
+      ]);
+      const res = await repo.getCountsByTracker();
+
+      expect(mocks.mockGroupBy).toHaveBeenCalledWith({
+        by: ['trackerName'],
+        _count: { _all: true },
+      });
+      expect(res['TV Vault']).toBe(50);
+      expect(res['TV Chaos UK']).toBe(10);
     });
   });
 });
