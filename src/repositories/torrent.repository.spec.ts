@@ -107,7 +107,7 @@ describe('TorrentRepository', () => {
   describe('searchTorrents', () => {
     it('should search torrents by title', async () => {
       mocks.mockFindMany.mockResolvedValue([]);
-      await repo.searchTorrents('test', 50, 0);
+      await repo.searchTorrents('test', undefined, 50, 0);
 
       expect(mocks.mockFindMany).toHaveBeenCalledWith({
         where: { title: { contains: 'test' } },
@@ -119,7 +119,7 @@ describe('TorrentRepository', () => {
 
     it('should search torrents with categories', async () => {
       mocks.mockFindMany.mockResolvedValue([]);
-      await repo.searchTorrents('test', 50, 0, ['2040']);
+      await repo.searchTorrents('test', undefined, 50, 0, ['2040']);
 
       expect(mocks.mockFindMany).toHaveBeenCalledWith({
         where: {
@@ -136,7 +136,7 @@ describe('TorrentRepository', () => {
   describe('countSearchTorrents', () => {
     it('should count searched torrents', async () => {
       mocks.mockCount.mockResolvedValue(5);
-      const res = await repo.countSearchTorrents('test', ['2000']);
+      const res = await repo.countSearchTorrents('test', undefined, ['2000']);
 
       expect(mocks.mockCount).toHaveBeenCalledWith({
         where: {

@@ -57,8 +57,8 @@ describe('TorznabController', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.items[0].title).toBe('Batman');
-      expect(mockSearchTorrents).toHaveBeenCalledWith('batman', 50, 0);
-      expect(mockCountSearchTorrents).toHaveBeenCalledWith('batman');
+      expect(mockSearchTorrents).toHaveBeenCalledWith('batman', undefined, 50, 0);
+      expect(mockCountSearchTorrents).toHaveBeenCalledWith('batman', undefined);
     });
   });
 
@@ -102,7 +102,7 @@ describe('TorznabController', () => {
 
       const res = await request(app).get('/api?t=tvsearch&q=Show');
       expect(res.status).toBe(200);
-      expect(mockSearchTorrents).toHaveBeenCalledWith('Show', 50, 0, undefined);
+      expect(mockSearchTorrents).toHaveBeenCalledWith('Show', undefined, 50, 0, undefined);
     });
 
     it('should fallback to default list if t is missing and q is missing', async () => {

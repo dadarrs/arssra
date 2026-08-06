@@ -23,7 +23,12 @@ export class TrackerService {
     }));
   }
 
-  async createTracker(data: { name: string; url: string; cronSchedule: string }) {
+  async createTracker(data: {
+    name: string;
+    url: string;
+    cronSchedule: string;
+    allowApi?: boolean;
+  }) {
     const newTracker = await this.repository.createTracker(data);
     if (newTracker.active) {
       this.rssService.startTrackerCron(newTracker);
@@ -36,8 +41,14 @@ export class TrackerService {
     this.rssService.stopTrackerCron(id);
   }
 
-  async updateTracker(id: number, url?: string, schedule?: string, name?: string) {
-    const updated = await this.repository.updateTracker(id, url, schedule, name);
+  async updateTracker(
+    id: number,
+    url?: string,
+    schedule?: string,
+    name?: string,
+    allowApi?: boolean,
+  ) {
+    const updated = await this.repository.updateTracker(id, url, schedule, name, allowApi);
     if (updated.active) {
       this.rssService.startTrackerCron(updated);
     }

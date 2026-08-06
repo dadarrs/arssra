@@ -1,7 +1,16 @@
+export interface TorznabSearchQuery {
+  q?: string;
+  imdbid?: string;
+  season?: string;
+  ep?: string;
+  categories?: string[];
+}
+
 export interface TrackerParser {
   parseCategory: (item: any, desc: string) => string;
   rewriteDownloadUrl?: (originalDownloadUrl: string, trackerRssUrl: string) => string;
   parseSize?: (item: any, desc: string) => number;
+  apiSearch?: (query: TorznabSearchQuery, trackerRssUrl: string) => Promise<any[]>;
 }
 
 export interface TrackerDefinition {
@@ -10,6 +19,8 @@ export interface TrackerDefinition {
   description: string;
   placeholderUrl?: string;
   infoHtml?: string;
+  hasApiSearch?: boolean;
+  apiWarningHtml?: string;
   parser?: TrackerParser;
 }
 
@@ -25,6 +36,11 @@ export function resolveTorznabCategory(catString: string, qualString: string): s
   if (/documentary|factual/.test(catString)) return '5080';
   if (catString.includes('foreign')) return '5020';
   if (catString.includes('radio') || catString.includes('mp3')) return '3010';
+  if (
+    /soundtrack|original score|ost|flac|audio|music/i.test(catString) ||
+    /soundtrack|original score|ost|flac|audio|music/i.test(qualString)
+  )
+    return '3000';
 
   const fmt = getFormatIndex(qualString);
 
