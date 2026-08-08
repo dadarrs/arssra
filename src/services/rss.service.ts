@@ -2,6 +2,8 @@ import cron, { ScheduledTask } from 'node-cron';
 import Parser from 'rss-parser';
 import { TorrentRepository } from '../repositories/torrent.repository';
 import { TrackerRepository } from '../repositories/tracker.repository';
+import { resolveTorznabCategory } from '../trackers/core';
+import { TRACKERS } from '../trackers/definitions';
 
 export class RssService {
   private readonly parser: Parser;
@@ -62,7 +64,16 @@ export class RssService {
       item,
       desc,
     );
-    const category = this.determineCategory(desc);
+
+    let category: string;
+    const def = TRACKERS.find((t) => t.name === trackerName);
+    if (def?.parser?.parseCategory) {
+      category = def.parser.parseCategory(item, desc);
+    } else {
+      const catString = desc ? desc.toLowerCase() : '';
+      const qualString = item.title ? item.title.toLowerCase() : '';
+      category = resolveTorznabCategory(catString, qualString);
+    }
 
     try {
       const initialCount = await this.torrentRepo.countTorrents();
@@ -115,38 +126,6 @@ export class RssService {
       }
     }
     return { enclosure_url, enclosure_type, enclosure_length, size };
-  }
-
-  private getFormatIndex(qualString: string): number {
-    if (/hd|1080|720/.test(qualString)) return 0;
-    if (/sd|480|576/.test(qualString)) return 1;
-    return 2;
-  }
-
-  private determineCategory(desc: string): string {
-    const parts = desc.split('/');
-    const catString = parts.length > 0 ? parts[0].toLowerCase() : '';
-    const qualString = parts.length > 1 ? parts[1].toLowerCase() : '';
-
-    if (catString.includes('sport')) return '5060';
-    if (catString.includes('anime')) return '5070';
-    if (/documentary|factual/.test(catString)) return '5080';
-    if (catString.includes('foreign')) return '5020';
-    if (catString.includes('radio') || catString.includes('mp3')) return '3010';
-
-    const fmt = this.getFormatIndex(qualString);
-
-    if (catString.includes('movie')) {
-      return ['2040', '2030', '2000'][fmt];
-    }
-
-    if (
-      /tv|news|sci-fi|entertainment|kids|reality|comedy|current affairs|drama|soaps/.test(catString)
-    ) {
-      return ['5040', '5030', '5000'][fmt];
-    }
-
-    return 'Unknown';
   }
 
   public async initializeCronJobs() {

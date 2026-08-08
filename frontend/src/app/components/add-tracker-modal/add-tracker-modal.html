@@ -1,0 +1,67 @@
+<h2 mat-dialog-title>{{ editingTrackerId ? 'Edit tracker' : 'Add new tracker' }}</h2>
+<mat-dialog-content>
+  <mat-form-field appearance="fill" class="full-width-field">
+    <mat-label for="tracker-def">Select tracker definition</mat-label>
+    <mat-select id="tracker-def" [(ngModel)]="newTrackerDefId" (selectionChange)="onDefinitionSelect()"
+      [disabled]="!!editingTrackerId">
+      @for (d of definitions; track d) {
+      <mat-option [value]="d.id"> {{ d.name }} - {{ d.description }} </mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  @if (newTrackerDefId) {
+  <mat-form-field appearance="fill" class="full-width-field">
+    <mat-label for="tracker-name">Tracker Name</mat-label>
+    <input id="tracker-name" aria-label="Tracker Name" matInput type="text" [(ngModel)]="newTrackerName"
+      placeholder="My Tracker" />
+  </mat-form-field>
+  }
+
+  @if (newTrackerDefId) {
+  <mat-form-field appearance="fill" class="full-width-field">
+    <mat-label for="tracker-url">RSS URL</mat-label>
+    <input id="tracker-url" aria-label="RSS URL" matInput type="text" [(ngModel)]="newTrackerUrl"
+      [placeholder]="selectedTrackerDef?.placeholderUrl || 'https://example.com/rss'" />
+  </mat-form-field>
+  }
+
+  @if (newTrackerDefId) {
+  <mat-form-field appearance="fill" class="full-width-field">
+    <mat-label for="tracker-schedule">Update Schedule</mat-label>
+    <mat-select id="tracker-schedule" [(ngModel)]="newTrackerSchedule">
+      @for (s of schedules; track s.value) {
+      <mat-option [value]="s.value">{{ s.label }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  }
+
+  @if (newTrackerDefId && selectedTrackerDef?.hasApiSearch) {
+  <div class="api-toggle-container">
+    <mat-slide-toggle color="primary" [(ngModel)]="newTrackerAllowApi">
+      Enable search API
+    </mat-slide-toggle>
+  </div>
+  @if (selectedTrackerDef?.apiWarningHtml) {
+  <div class="info-box warning-box">
+    <mat-icon class="warning-icon">warning</mat-icon>
+    <span class="warning-text" [innerHTML]="selectedTrackerDef.apiWarningHtml"></span>
+  </div>
+  }
+  }
+
+  @if (selectedTrackerDef?.infoHtml) {
+  <div class="info-box">
+    <mat-icon>info</mat-icon>
+    <span [innerHTML]="selectedTrackerDef.infoHtml"></span>
+  </div>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Cancel</button>
+  <button mat-raised-button color="primary" (click)="saveTracker()"
+    [disabled]="!newTrackerDefId || !newTrackerUrl || !newTrackerSchedule">
+    {{ editingTrackerId ? 'Save changes' : 'Add' }}
+  </button>
+</mat-dialog-actions>

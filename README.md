@@ -50,9 +50,10 @@ arssra solves this by acting as a bridge. It continuously caches your RSS feeds 
 
 ## Supported trackers
 
-arssra currently provides specialized RSS-to-Torznab indexing for the following trackers:
+arssra currently provides specialised RSS-to-Torznab indexing for the following trackers:
 
 - **TV Chaos UK** (Broadcasting the best of British)
+- **TV Vault** (A classic TV torrent tracker) - *Note: Remote API search enrichment requires the "Member" class or higher.*
 
 *More trackers can be supported by adding their definitions to the codebase.*
 

@@ -1,0 +1,90 @@
+<mat-form-field appearance="fill" class="search-field full-width search-field-spacing" subscriptSizing="dynamic">
+  <mat-icon matPrefix>search</mat-icon>
+  <mat-label for="search-input">Search locally indexed releases</mat-label>
+  <input id="search-input" aria-label="Search locally indexed releases" matInput type="text" [(ngModel)]="searchQuery"
+    (ngModelChange)="onSearchModel($event)" placeholder="Search locally indexed releases..." [matAutocomplete]="auto" />
+  @if (searchQuery) {
+  <button mat-icon-button matSuffix (click)="clearSearch()">
+    <mat-icon>close</mat-icon>
+  </button>
+  }
+  <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onSearchModel($event.option.value)">
+    @if (searchQuery && searchQuery.length >= 3) {
+    @for (t of torrentsDataSource.data; track t) {
+    <mat-option [value]="t.title">
+      {{ t.title }}
+    </mat-option>
+    }
+    }
+  </mat-autocomplete>
+</mat-form-field>
+
+<div class="header-actions section-title-spacing">
+  <h2>Indexed torrents</h2>
+</div>
+
+<div class="stats-bar">
+  <span class="time-text">{{ torrentsDataSource.data.length }} torrents loaded</span>
+  <span class="time-text">{{ totalCount }} torrents indexed</span>
+</div>
+
+<div class="table-container">
+  <mat-table [dataSource]="torrentsDataSource" matSort #torrentSort="matSort" class="mat-elevation-z8 torrents-table">
+    <ng-container matColumnDef="title">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Title </mat-header-cell>
+      <mat-cell *matCellDef="let item" class="title-cell"> {{ item.title }} </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="category">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Category </mat-header-cell>
+      <mat-cell *matCellDef="let item">
+        <span class="time-text">{{ formatCategory(item.category) }}</span>
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="tracker">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Tracker </mat-header-cell>
+      <mat-cell *matCellDef="let item">
+        <span class="time-text">{{ item.trackerName || 'Unknown' }}</span>
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="size">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Size </mat-header-cell>
+      <mat-cell *matCellDef="let item">
+        <span class="time-text">{{ formatSize(item.size) }}</span>
+        @if (!item.size) {
+        <mat-icon
+          style="font-size: 16px; width: 16px; height: 16px; margin-left: 4px; opacity: 0.6; cursor: help; vertical-align: text-bottom;"
+          matTooltip="Tracker did not provide a size. A smart estimated size is sent to Prowlarr/arrs to safely bypass size limits.">
+          info
+        </mat-icon>
+        }
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="pubDate">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Published </mat-header-cell>
+      <mat-cell *matCellDef="let item">
+        <span class="time-text">{{ item.pubDate || item.created_at | relativeTime }}</span>
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="action">
+      <mat-header-cell *matHeaderCellDef> Action </mat-header-cell>
+      <mat-cell *matCellDef="let item">
+        @if (item.comments) {
+        <a mat-icon-button color="accent" [href]="item.comments" target="_blank" title="Comments">
+          <mat-icon>comment</mat-icon>
+        </a>
+        }
+        <a mat-icon-button color="primary" [href]="item.downloadUrl || item.link" target="_blank" title="Download">
+          <mat-icon>file_download</mat-icon>
+        </a>
+      </mat-cell>
+    </ng-container>
+
+    <mat-header-row *matHeaderRowDef="torrentColumns"></mat-header-row>
+    <mat-row *matRowDef="let row; columns: torrentColumns"></mat-row>
+  </mat-table>
+</div>

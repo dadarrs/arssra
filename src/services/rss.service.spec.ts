@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { resolveTorznabCategory } from '../trackers/core';
+import { TRACKERS } from '../trackers/definitions';
 import { RssService } from './rss.service';
 
 describe('RssService', () => {
@@ -6,48 +8,6 @@ describe('RssService', () => {
 
   beforeEach(() => {
     service = new RssService();
-  });
-
-  describe('determineCategory', () => {
-    it('should correctly identify Sports categories', () => {
-      expect(service.determineCategory('Sport / SD / 500 MiB')).toBe('5060');
-      expect(service.determineCategory('sport / 1080p / 2 GiB')).toBe('5060');
-    });
-
-    it('should correctly identify Anime categories', () => {
-      expect(service.determineCategory('Anime / HD / 1 GiB')).toBe('5070');
-    });
-
-    it('should correctly identify Documentary categories', () => {
-      expect(service.determineCategory('Documentary / SD / 1 GiB')).toBe('5080');
-      expect(service.determineCategory('Factual / 1080 / 1 GiB')).toBe('5080');
-    });
-
-    it('should correctly identify Audio/Radio categories', () => {
-      expect(service.determineCategory('Radio / MP3 / 50 MiB')).toBe('3010');
-      expect(service.determineCategory('MP3 / something / 5 MiB')).toBe('3010');
-    });
-
-    it('should correctly map Movies based on quality (HD/SD)', () => {
-      expect(service.determineCategory('Movie / 1080p / 5 GiB')).toBe('2040'); // HD
-      expect(service.determineCategory('Movie / 720p / 3 GiB')).toBe('2040'); // HD
-      expect(service.determineCategory('Movie / SD / 1 GiB')).toBe('2030'); // SD
-      expect(service.determineCategory('Movie / 480p / 1 GiB')).toBe('2030'); // SD
-      expect(service.determineCategory('Movie / Unknown / 1 GiB')).toBe('2000'); // Default
-    });
-
-    it('should correctly map TV shows based on quality (HD/SD)', () => {
-      expect(service.determineCategory('TV / 1080i / 2 GiB')).toBe('5040'); // HD
-      expect(service.determineCategory('Entertainment / 720p / 1 GiB')).toBe('5040'); // HD
-      expect(service.determineCategory('Comedy / SD / 500 MiB')).toBe('5030'); // SD
-      expect(service.determineCategory('Drama / 480p / 500 MiB')).toBe('5030'); // SD
-      expect(service.determineCategory('Soaps / Unknown / 500 MiB')).toBe('5000'); // Default
-    });
-
-    it('should return Unknown for unmapped categories', () => {
-      expect(service.determineCategory('Random / SD / 50 MiB')).toBe('Unknown');
-      expect(service.determineCategory('GarbageStringWithoutSlashes')).toBe('Unknown');
-    });
   });
 
   describe('extractEnclosureData', () => {
@@ -107,6 +67,64 @@ describe('RssService', () => {
       const item = { title: 'No GUID' };
       const res = await service.processTorrentItem(item, 'TestTracker');
       expect(res).toBe(false);
+    });
+  });
+});
+
+describe('Tracker Definitions', () => {
+  describe('resolveTorznabCategory', () => {
+    it('should correctly identify Sports categories', () => {
+      expect(resolveTorznabCategory('sport', 'sd')).toBe('5060');
+    });
+
+    it('should correctly identify Anime categories', () => {
+      expect(resolveTorznabCategory('anime', 'hd')).toBe('5070');
+    });
+
+    it('should correctly identify Documentary categories', () => {
+      expect(resolveTorznabCategory('documentary', 'sd')).toBe('5080');
+      expect(resolveTorznabCategory('factual', '1080')).toBe('5080');
+    });
+
+    it('should correctly identify Audio/Radio categories', () => {
+      expect(resolveTorznabCategory('radio', 'mp3')).toBe('3010');
+    });
+
+    it('should correctly map Movies based on quality (HD/SD)', () => {
+      expect(resolveTorznabCategory('movie', '1080p')).toBe('2040'); // HD
+      expect(resolveTorznabCategory('movie', 'sd')).toBe('2030'); // SD
+      expect(resolveTorznabCategory('movie', 'unknown')).toBe('2000'); // Default
+    });
+
+    it('should correctly map TV shows based on quality (HD/SD)', () => {
+      expect(resolveTorznabCategory('tv', '1080i')).toBe('5040'); // HD
+      expect(resolveTorznabCategory('comedy', 'sd')).toBe('5030'); // SD
+      expect(resolveTorznabCategory('soaps', 'unknown')).toBe('5000'); // Default
+    });
+
+    it('should return Unknown for unmapped categories', () => {
+      expect(resolveTorznabCategory('random', 'sd')).toBe('Unknown');
+    });
+  });
+
+  describe('TV Chaos UK Parser', () => {
+    const parser = TRACKERS.find((t) => t.id === 'tvchaosuk')?.parser;
+
+    it('should extract from description', () => {
+      expect(parser?.parseCategory({}, 'Movie / 1080p / 5 GiB')).toBe('2040');
+      expect(parser?.parseCategory({}, 'Documentary / SD / 1 GiB')).toBe('5080');
+    });
+  });
+
+  describe('TV Vault Parser', () => {
+    const parser = TRACKERS.find((t) => t.id === 'tvvault')?.parser;
+
+    it('should extract from categories and title', () => {
+      const item = { title: 'Some Show (1080p) (1991)', categories: ['Comedy', 'Family'] };
+      expect(parser?.parseCategory(item, 'desc')).toBe('5040');
+
+      const itemSd = { title: 'Some Show SD', categories: 'Drama' };
+      expect(parser?.parseCategory(itemSd, 'desc')).toBe('5030');
     });
   });
 });

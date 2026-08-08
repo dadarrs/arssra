@@ -1,0 +1,60 @@
+<h2 mat-dialog-title>Connect to Prowlarr</h2>
+<mat-dialog-content>
+  <p>Automatically sync arssra to Prowlarr as a Generic Torznab indexer.</p>
+
+  @if (!hasActiveTrackers) {
+  <div class="info-box sync-status-box error" style="margin-bottom: 16px;">
+    <mat-icon class="sync-status-icon error">warning</mat-icon>
+    <span>You must add and enable at least one tracker before syncing to Prowlarr.</span>
+  </div>
+  }
+
+  <mat-form-field appearance="fill" class="full-width-field">
+    <mat-label>Prowlarr URL</mat-label>
+    <input id="prowlarr-url" aria-label="Prowlarr URL" matInput type="url" [(ngModel)]="prowlarrUrl"
+      placeholder="http://192.168.1.100:9696" />
+  </mat-form-field>
+
+  <mat-form-field appearance="fill" class="full-width-field">
+    <mat-label>Prowlarr API Key</mat-label>
+    <input id="prowlarr-api-key" aria-label="Prowlarr API Key" matInput type="password" [(ngModel)]="prowlarrApiKey"
+      placeholder="Your Prowlarr API Key" />
+  </mat-form-field>
+
+  <mat-form-field appearance="fill" class="full-width-field">
+    <mat-label>arssra Local URL</mat-label>
+    <input id="arssra-local-url" aria-label="arssra Local URL" matInput type="url" [(ngModel)]="arssraUrl"
+      placeholder="http://localhost:3232" />
+    <mat-hint>This is how Prowlarr will connect back to arssra.</mat-hint>
+  </mat-form-field>
+
+  @if (prowlarrSyncMessage) {
+  <div class="info-box sync-status-box" [ngClass]="prowlarrSyncStatus">
+    <mat-icon class="sync-status-icon" [ngClass]="prowlarrSyncStatus">
+      {{ prowlarrSyncStatus === 'error' ? 'error' : 'check_circle' }}
+    </mat-icon>
+    <span>{{ prowlarrSyncMessage }}</span>
+  </div>
+  }
+
+  <div class="manual-sync-section">
+    <h3 class="manual-sync-title">Prefer to do it manually?</h3>
+    <p class="manual-sync-subtitle">Copy this Torznab URL and add a Generic Torznab Indexer in Prowlarr.</p>
+
+    <div class="copy-url-container">
+      <input id="manual-copy-url" aria-label="Manual Torznab URL" matInput type="text" readonly value="{{arssraUrl}}"
+        class="copy-url-input" />
+      <button mat-icon-button (click)="copyToClipboard(arssraUrl)" title="Copy to clipboard">
+        <mat-icon>content_copy</mat-icon>
+      </button>
+    </div>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Close</button>
+  <button mat-raised-button color="primary" (click)="syncToProwlarr()"
+    [disabled]="!prowlarrUrl || !prowlarrApiKey || !arssraUrl || prowlarrSyncStatus === 'syncing' || !hasActiveTrackers">
+    {{ prowlarrSyncStatus === 'syncing' ? 'Syncing...' : 'Auto-Sync' }}
+  </button>
+</mat-dialog-actions>

@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   mockCount: vi.fn(),
   mockCreate: vi.fn(),
   mockUpdate: vi.fn(),
+  mockGroupBy: vi.fn(),
 }));
 
 vi.mock('../config/db.config', () => {
@@ -18,6 +19,7 @@ vi.mock('../config/db.config', () => {
         count: mocks.mockCount,
         create: mocks.mockCreate,
         update: mocks.mockUpdate,
+        groupBy: mocks.mockGroupBy,
       },
     },
   };
@@ -32,9 +34,9 @@ describe('TorrentRepository', () => {
   });
 
   describe('upsertTorrent', () => {
-    it('should update existing torrent if found', async () => {
+    it('should update existing torrent if found and return false', async () => {
       mocks.mockFindUnique.mockResolvedValue({ id: 1, guid: 'abc' });
-      await repo.upsertTorrent({ guid: 'abc', title: 'test' });
+      const res = await repo.upsertTorrent({ guid: 'abc', title: 'test' });
 
       expect(mocks.mockFindUnique).toHaveBeenCalledWith({ where: { guid: 'abc' } });
       expect(mocks.mockUpdate).toHaveBeenCalledWith({
@@ -42,17 +44,19 @@ describe('TorrentRepository', () => {
         data: { guid: 'abc', title: 'test' },
       });
       expect(mocks.mockCreate).not.toHaveBeenCalled();
+      expect(res).toBe(false);
     });
 
-    it('should create new torrent if not found', async () => {
+    it('should create new torrent if not found and return true', async () => {
       mocks.mockFindUnique.mockResolvedValue(null);
-      await repo.upsertTorrent({ guid: 'abc', title: 'test' });
+      const res = await repo.upsertTorrent({ guid: 'abc', title: 'test' });
 
       expect(mocks.mockFindUnique).toHaveBeenCalledWith({ where: { guid: 'abc' } });
       expect(mocks.mockCreate).toHaveBeenCalledWith({
         data: { guid: 'abc', title: 'test' },
       });
       expect(mocks.mockUpdate).not.toHaveBeenCalled();
+      expect(res).toBe(true);
     });
   });
 
@@ -105,7 +109,7 @@ describe('TorrentRepository', () => {
   describe('searchTorrents', () => {
     it('should search torrents by title', async () => {
       mocks.mockFindMany.mockResolvedValue([]);
-      await repo.searchTorrents('test', 50, 0);
+      await repo.searchTorrents('test', undefined, 50, 0);
 
       expect(mocks.mockFindMany).toHaveBeenCalledWith({
         where: { title: { contains: 'test' } },
@@ -117,7 +121,7 @@ describe('TorrentRepository', () => {
 
     it('should search torrents with categories', async () => {
       mocks.mockFindMany.mockResolvedValue([]);
-      await repo.searchTorrents('test', 50, 0, ['2040']);
+      await repo.searchTorrents('test', undefined, 50, 0, ['2040']);
 
       expect(mocks.mockFindMany).toHaveBeenCalledWith({
         where: {
@@ -134,7 +138,7 @@ describe('TorrentRepository', () => {
   describe('countSearchTorrents', () => {
     it('should count searched torrents', async () => {
       mocks.mockCount.mockResolvedValue(5);
-      const res = await repo.countSearchTorrents('test', ['2000']);
+      const res = await repo.countSearchTorrents('test', undefined, ['2000']);
 
       expect(mocks.mockCount).toHaveBeenCalledWith({
         where: {
@@ -143,6 +147,23 @@ describe('TorrentRepository', () => {
         },
       });
       expect(res).toBe(5);
+    });
+  });
+
+  describe('getCountsByTracker', () => {
+    it('should group and return counts by tracker name', async () => {
+      mocks.mockGroupBy.mockResolvedValue([
+        { trackerName: 'TV Vault', _count: { _all: 50 } },
+        { trackerName: 'TV Chaos UK', _count: { _all: 10 } },
+      ]);
+      const res = await repo.getCountsByTracker();
+
+      expect(mocks.mockGroupBy).toHaveBeenCalledWith({
+        by: ['trackerName'],
+        _count: { _all: true },
+      });
+      expect(res['TV Vault']).toBe(50);
+      expect(res['TV Chaos UK']).toBe(10);
     });
   });
 });

@@ -2,8 +2,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TrackerService } from './tracker.service';
 
 const mockGetAllTrackers = vi.fn().mockResolvedValue([
-  { id: 1, active: true, lastRun: new Date('2024-01-01T12:00:00Z'), cronSchedule: '0 * * * *' },
-  { id: 2, active: false, lastRun: new Date('2024-01-01T12:00:00Z'), cronSchedule: '0 * * * *' },
+  {
+    id: 1,
+    name: 'TV Vault',
+    active: true,
+    lastRun: new Date('2024-01-01T12:00:00Z'),
+    cronSchedule: '0 * * * *',
+  },
+  {
+    id: 2,
+    name: 'Other',
+    active: false,
+    lastRun: new Date('2024-01-01T12:00:00Z'),
+    cronSchedule: '0 * * * *',
+  },
 ]);
 const mockCreateTracker = vi.fn().mockResolvedValue({ id: 2, active: true });
 const mockDeleteTracker = vi.fn().mockResolvedValue(undefined);
@@ -18,6 +30,18 @@ vi.mock('../repositories/tracker.repository', () => {
       deleteTracker = mockDeleteTracker;
       updateTracker = mockUpdateTracker;
       toggleTracker = mockToggleTracker;
+    },
+  };
+});
+
+const mockGetCountsByTracker = vi.fn().mockResolvedValue({
+  'TV Vault': 50,
+});
+
+vi.mock('../repositories/torrent.repository', () => {
+  return {
+    TorrentRepository: class {
+      getCountsByTracker = mockGetCountsByTracker;
     },
   };
 });
@@ -40,9 +64,11 @@ describe('TrackerService', () => {
 
     // Active tracker should have nextRun calculated
     expect(trackers[0].nextRun?.toISOString()).toBe('2024-01-01T13:00:00.000Z');
+    expect(trackers[0].torrentCount).toBe(50);
 
     // Inactive tracker should return null for nextRun
     expect(trackers[1].nextRun).toBeNull();
+    expect(trackers[1].torrentCount).toBe(0);
   });
 
   it('should start cron when creating active tracker', async () => {

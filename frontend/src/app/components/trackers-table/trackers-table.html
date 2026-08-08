@@ -1,0 +1,135 @@
+<div class="header-actions">
+  <h2>Active trackers</h2>
+  <div class="header-button-group">
+    <div [matTooltip]="!hasActiveTrackers ? 'Enable at least one tracker to connect to Prowlarr' : ''">
+      <button mat-raised-button color="primary" (click)="openProwlarrModal()" [disabled]="!hasActiveTrackers">
+        <mat-icon>sync</mat-icon> Connect to Prowlarr
+      </button>
+    </div>
+    <button mat-raised-button color="primary" (click)="openAddTrackerDialog()">
+      <mat-icon>add</mat-icon> Add tracker
+    </button>
+  </div>
+</div>
+
+<div class="table-container">
+  <mat-table [dataSource]="trackersDataSource" matSort #trackerSort="matSort" class="mat-elevation-z8 trackers-table">
+    <ng-container matColumnDef="name">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Name </mat-header-cell>
+      <mat-cell *matCellDef="let t" class="title-cell"> {{ t.name }} </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="torrentCount">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Releases </mat-header-cell>
+      <mat-cell *matCellDef="let t"> <span class="time-text">{{ t.torrentCount || 0 }}</span> </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="lastRun">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Last run </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        <span class="time-text">{{ t.lastRun ? (t.lastRun | relativeTime) : 'Never' }}</span>
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="nextRun">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Next run </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        <span class="time-text">{{ t.nextRun ? (t.nextRun | relativeTime) : 'Pending' }}</span>
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="url">
+      <mat-header-cell *matHeaderCellDef> RSS URL </mat-header-cell>
+      <mat-cell *matCellDef="let t" class="url-cell"> {{ t.url }} </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="cronSchedule">
+      <mat-header-cell *matHeaderCellDef> Schedule </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        <code>{{ t.cronSchedule }}</code>
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="refreshStatus">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Status </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        @if (t.lastStatus === 'Success') {
+        <span class="time-text status-success-text">
+          Success<br />
+          <small class="status-success-subtext">(added {{ t.lastAddedCount }})</small>
+        </span>
+        }
+        @if (t.lastStatus === 'Failed') {
+        <span class="time-text status-failed-text">Failed
+          @if (t.lastError) {
+          <mat-icon [matTooltip]="t.lastError" class="status-error-icon">info</mat-icon>
+          }
+        </span>
+        }
+        @if (!t.lastStatus) {
+        <span class="time-text status-pending-text">Pending</span>
+        }
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="apiStatus">
+      <mat-header-cell *matHeaderCellDef> API Status </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        @if (t.allowApi) {
+          <div>
+            @if (isCooldownActive(t)) {
+              <span class="time-text status-failed-text" [matTooltip]="'Cooldown until ' + t.apiCooldownUntil">
+                Cooldown ({{ t.apiCooldownUntil | relativeTime }})
+              </span>
+            } @else {
+              <span class="time-text status-success-text">Ready</span>
+            }
+            @if (t.lastApiAddedCount !== null && t.lastApiAddedCount !== undefined) {
+              <br /><small class="status-success-subtext" [matTooltip]="t.lastApiSearchTerm ? 'Search term: ' + t.lastApiSearchTerm : ''">(added {{ t.lastApiAddedCount }})</small>
+            }
+          </div>
+        } @else {
+          <span class="time-text" style="opacity: 0.5">-</span>
+        }
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <mat-header-cell *matHeaderCellDef mat-sort-header> Enable </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        <mat-slide-toggle color="primary" aria-label="Toggle tracker active status" [checked]="t.active"
+          (change)="toggleTracker(t.id, $event.checked)"></mat-slide-toggle>
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <mat-header-cell *matHeaderCellDef> Action </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        <button mat-icon-button color="primary" (click)="editTracker(t)">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button color="warn" (click)="deleteTracker(t.id)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </mat-cell>
+    </ng-container>
+
+    <mat-header-row *matHeaderRowDef="trackerColumns"></mat-header-row>
+    <mat-row *matRowDef="let row; columns: trackerColumns"></mat-row>
+  </mat-table>
+</div>
+
+@if (trackersDataSource.data.length === 0) {
+<div class="empty-state mat-elevation-z8">No trackers active. Add one to start indexing!</div>
+}
+
+<ng-template #deleteConfirmDialog>
+  <h2 mat-dialog-title>Confirm Deletion</h2>
+  <mat-dialog-content>
+    <p>Are you sure you want to permanently delete this tracker? This action cannot be undone.</p>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-raised-button color="warn" (click)="confirmDelete()">Delete</button>
+  </mat-dialog-actions>
+</ng-template>

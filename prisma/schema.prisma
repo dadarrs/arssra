@@ -8,16 +8,20 @@ datasource db {
 }
 
 model Tracker {
-  id           Int      @id @default(autoincrement())
-  name         String
-  url          String
-  cronSchedule String   @default("*/15 * * * *")
-  active       Boolean  @default(true)
-  lastRun      DateTime?
-  lastStatus   String?
-  lastAddedCount Int?
-  lastError    String?
-  created_at   DateTime @default(now())
+  id                Int      @id @default(autoincrement())
+  name              String
+  url               String
+  cronSchedule      String   @default("*/15 * * * *")
+  active            Boolean  @default(true)
+  lastRun           DateTime?
+  lastStatus        String?
+  lastAddedCount    Int?
+  lastError         String?
+  apiCooldownUntil  DateTime?
+  lastApiAddedCount Int?
+  lastApiSearchTerm String?
+  allowApi          Boolean  @default(false)
+  created_at        DateTime @default(now())
 
   @@map("trackers")
 }
@@ -36,6 +40,9 @@ model Torrent {
   trackerName      String?
   category         String?
   comments         String?
+  seeders          Int?
+  peers            Int?
+  imdbId           String?
   created_at       DateTime @default(now())
 
   @@map("torrents")

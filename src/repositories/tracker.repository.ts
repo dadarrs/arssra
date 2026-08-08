@@ -4,6 +4,7 @@ export interface CreateTrackerDto {
   name: string;
   url: string;
   cronSchedule?: string;
+  allowApi?: boolean;
 }
 
 export class TrackerRepository {
@@ -23,11 +24,18 @@ export class TrackerRepository {
     return await prisma.tracker.delete({ where: { id } });
   }
 
-  public async updateTracker(id: number, url?: string, cronSchedule?: string, name?: string) {
+  public async updateTracker(
+    id: number,
+    url?: string,
+    cronSchedule?: string,
+    name?: string,
+    allowApi?: boolean,
+  ) {
     const data: any = {};
     if (url !== undefined) data.url = url;
     if (cronSchedule !== undefined) data.cronSchedule = cronSchedule;
     if (name !== undefined) data.name = name;
+    if (allowApi !== undefined) data.allowApi = allowApi;
     return await prisma.tracker.update({ where: { id }, data });
   }
 
@@ -49,6 +57,24 @@ export class TrackerRepository {
         lastAddedCount: addedCount,
         lastError: errorMessage,
       },
+    });
+  }
+
+  public async setApiCooldown(id: number, cooldownUntil: Date) {
+    return await prisma.tracker.update({
+      where: { id },
+      data: { apiCooldownUntil: cooldownUntil },
+    });
+  }
+
+  public async updateApiStatus(id: number, addedCount: number, searchTerm?: string) {
+    const data: any = { lastApiAddedCount: addedCount };
+    if (searchTerm !== undefined) {
+      data.lastApiSearchTerm = searchTerm;
+    }
+    return await prisma.tracker.update({
+      where: { id },
+      data,
     });
   }
 }

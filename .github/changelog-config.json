@@ -1,0 +1,41 @@
+{
+  "categories": [
+    {
+      "title": "## Features",
+      "labels": ["feat"]
+    },
+    {
+      "title": "## Bug Fixes",
+      "labels": ["fix"]
+    },
+    {
+      "title": "## Refactoring",
+      "labels": ["refactor"]
+    },
+    {
+      "title": "## Documentation",
+      "labels": ["docs"]
+    },
+    {
+      "title": "## Maintenance",
+      "labels": ["chore", "build", "ci", "test"]
+    }
+  ],
+  "ignore_labels": ["ignore", "dependabot"],
+  "label_extractor": [
+    {
+      "pattern": "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)",
+      "target": "$1"
+    },
+    {
+      "pattern": ".*dependabot.*",
+      "target": "dependabot"
+    },
+    {
+      "pattern": "^Merge (pull request|branch).*",
+      "target": "ignore"
+    }
+  ],
+  "template": "${{CHANGELOG}}",
+  "commit_template": "- ${{TITLE}}"
+}

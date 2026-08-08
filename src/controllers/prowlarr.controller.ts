@@ -15,6 +15,26 @@ export class ProwlarrController {
     return errorText;
   }
 
+  private getCleanProwlarrUrl(prowlarrUrl: string): string {
+    const parsed = new URL(prowlarrUrl);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new Error('Invalid protocol');
+    }
+    let cleanProwlarrUrl = parsed.origin + (parsed.pathname === '/' ? '' : parsed.pathname);
+    if (cleanProwlarrUrl.endsWith('/')) {
+      cleanProwlarrUrl = cleanProwlarrUrl.slice(0, -1);
+    }
+    return cleanProwlarrUrl;
+  }
+
+  private getCleanArssraUrl(arssraUrl: string): string {
+    let cleanArssraUrl = arssraUrl;
+    while (cleanArssraUrl.endsWith('/')) {
+      cleanArssraUrl = cleanArssraUrl.slice(0, -1);
+    }
+    return cleanArssraUrl;
+  }
+
   public async syncToProwlarr(req: Request, res: Response) {
     try {
       const { prowlarrUrl, prowlarrApiKey, arssraUrl } = req.body;
@@ -25,27 +45,16 @@ export class ProwlarrController {
           .json({ error: 'Missing required fields: prowlarrUrl, prowlarrApiKey, arssraUrl' });
       }
 
-      // Validate and clean Prowlarr URL
       let cleanProwlarrUrl = '';
       try {
-        const parsed = new URL(prowlarrUrl);
-        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-          throw new Error('Invalid protocol');
-        }
-        cleanProwlarrUrl = parsed.origin + (parsed.pathname === '/' ? '' : parsed.pathname);
-        if (cleanProwlarrUrl.endsWith('/')) {
-          cleanProwlarrUrl = cleanProwlarrUrl.slice(0, -1);
-        }
+        cleanProwlarrUrl = this.getCleanProwlarrUrl(prowlarrUrl);
       } catch {
         return res
           .status(400)
           .json({ error: 'Invalid prowlarrUrl. Must be a valid HTTP or HTTPS URL.' });
       }
 
-      let cleanArssraUrl = arssraUrl;
-      while (cleanArssraUrl.endsWith('/')) {
-        cleanArssraUrl = cleanArssraUrl.slice(0, -1);
-      }
+      const cleanArssraUrl = this.getCleanArssraUrl(arssraUrl);
 
       // 1. Fetch existing indexers to check if 'arssra' already exists
       const getResponse = await fetch(`${cleanProwlarrUrl}/api/v1/indexer`, {

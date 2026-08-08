@@ -398,3 +398,35 @@ code {
   background-color: #1976d2 !important;
   color: #ffffff !important;
 }
+
+.api-toggle-container {
+  margin: 16px 0;
+}
+
+.info-box.warning-box {
+  margin-bottom: 16px;
+  border-left-color: #ff9800;
+  background-color: rgba(255, 152, 0, 0.1);
+}
+
+.info-box mat-icon.warning-icon {
+  color: #e65100;
+}
+
+.warning-text {
+  color: #e65100;
+  font-weight: 500;
+}
+
+:host-context(html.dark-theme) .info-box.warning-box {
+  background-color: rgba(255, 152, 0, 0.05);
+  border-left-color: #ff9800;
+}
+
+:host-context(html.dark-theme) .info-box mat-icon.warning-icon {
+  color: #ffb74d;
+}
+
+:host-context(html.dark-theme) .warning-text {
+  color: #ffb74d;
+}

@@ -26,15 +26,15 @@ export class TrackerController {
     this.toggleTracker = this.toggleTracker.bind(this);
   }
 
-  public async getDefinitions(req: Request, res: Response) {
+  public async getDefinitions(_req: Request, res: Response) {
     res.json(TRACKERS);
   }
 
-  public async getSchedules(req: Request, res: Response) {
+  public async getSchedules(_req: Request, res: Response) {
     res.json(VALID_SCHEDULES);
   }
 
-  public async getAllTrackers(req: Request, res: Response) {
+  public async getAllTrackers(_req: Request, res: Response) {
     try {
       const mappedTrackers = await this.trackerService.getAllTrackers();
 
@@ -47,7 +47,7 @@ export class TrackerController {
 
   public async createTracker(req: Request, res: Response) {
     try {
-      const { definitionId, url, schedule, name } = req.body;
+      const { definitionId, url, schedule, name, allowApi } = req.body;
       if (!definitionId) {
         return res.status(400).json({ error: 'Tracker Definition ID is required' });
       }
@@ -68,6 +68,7 @@ export class TrackerController {
         name: name || def.name,
         url: url,
         cronSchedule: finalSchedule,
+        allowApi: allowApi === true,
       });
 
       res.status(201).json(newTracker);
@@ -89,14 +90,20 @@ export class TrackerController {
   public async updateTracker(req: Request, res: Response) {
     try {
       const id = Number.parseInt(req.params.id as string, 10);
-      const { url, schedule, name } = req.body;
+      const { url, schedule, name, allowApi } = req.body;
 
       let finalSchedule = schedule;
       if (finalSchedule && !VALID_SCHEDULES.some((s) => s.value === finalSchedule)) {
         finalSchedule = '*/30 * * * *';
       }
 
-      const updated = await this.trackerService.updateTracker(id, url, finalSchedule, name);
+      const updated = await this.trackerService.updateTracker(
+        id,
+        url,
+        finalSchedule,
+        name,
+        allowApi,
+      );
 
       res.json(updated);
     } catch {

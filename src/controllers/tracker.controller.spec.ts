@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import request from 'supertest';
 import express from 'express';
+import request from 'supertest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TrackerController } from './tracker.controller';
 
 const mockTrackerService = {
@@ -90,6 +90,7 @@ describe('TrackerController', () => {
         name: 'TV Chaos UK',
         url: 'http://test',
         cronSchedule: '*/30 * * * *',
+        allowApi: false,
       });
     });
 
@@ -133,6 +134,7 @@ describe('TrackerController', () => {
         'http://newurl',
         '0 * * * *',
         undefined,
+        undefined,
       );
     });
 
@@ -148,6 +150,7 @@ describe('TrackerController', () => {
         1,
         undefined,
         '*/30 * * * *',
+        undefined,
         undefined,
       );
     });

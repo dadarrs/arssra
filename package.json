@@ -1,6 +1,6 @@
 {
   "name": "arssra",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Automated RSS to Torznab",
   "main": "dist/index.js",
   "scripts": {
@@ -43,16 +43,16 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/express": "^5.0.6",
-    "@types/node": "^26.1.1",
+    "@types/node": "^26.1.2",
     "@types/node-cron": "^3.0.11",
     "@types/supertest": "^7.2.0",
     "@vitest/coverage-v8": "^4.1.10",
-    "eslint": "^10.6.0",
+    "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
     "nodemon": "^3.1.14",
-    "prettier": "^3.9.5",
+    "prettier": "^3.9.6",
     "prisma": "^5.22.0",
     "puppeteer": "^25.3.0",
     "supertest": "^7.2.2",
@@ -60,5 +60,11 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.10"
+  },
+  "allowScripts": {
+    "@prisma/client@5.22.0": true,
+    "@prisma/engines@5.22.0": true,
+    "prisma@5.22.0": true,
+    "puppeteer@25.3.0": true
   }
 }
