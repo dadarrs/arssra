@@ -72,9 +72,12 @@
   flex: 0 0 160px;
 }
 
-.trackers-table .mat-column-refreshStatus,
-.trackers-table .mat-column-apiStatus {
+.trackers-table .mat-column-refreshStatus {
   flex: 0 0 140px;
+}
+
+.trackers-table .mat-column-apiStatus {
+  flex: 0 0 180px;
 }
 
 .trackers-table .mat-column-status {
