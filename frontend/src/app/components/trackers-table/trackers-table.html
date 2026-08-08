@@ -72,6 +72,28 @@
       </mat-cell>
     </ng-container>
 
+    <ng-container matColumnDef="apiStatus">
+      <mat-header-cell *matHeaderCellDef> API Status </mat-header-cell>
+      <mat-cell *matCellDef="let t">
+        @if (t.allowApi) {
+          <div>
+            @if (isCooldownActive(t)) {
+              <span class="time-text status-failed-text" [matTooltip]="'Cooldown until ' + t.apiCooldownUntil">
+                Cooldown ({{ t.apiCooldownUntil | relativeTime }})
+              </span>
+            } @else {
+              <span class="time-text status-success-text">Ready</span>
+            }
+            @if (t.lastApiAddedCount !== null && t.lastApiAddedCount !== undefined) {
+              <br /><small class="status-success-subtext" [matTooltip]="t.lastApiSearchTerm ? 'Search term: ' + t.lastApiSearchTerm : ''">(added {{ t.lastApiAddedCount }})</small>
+            }
+          </div>
+        } @else {
+          <span class="time-text" style="opacity: 0.5">-</span>
+        }
+      </mat-cell>
+    </ng-container>
+
     <ng-container matColumnDef="status">
       <mat-header-cell *matHeaderCellDef mat-sort-header> Enable </mat-header-cell>
       <mat-cell *matCellDef="let t">

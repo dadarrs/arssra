@@ -34,9 +34,9 @@ describe('TorrentRepository', () => {
   });
 
   describe('upsertTorrent', () => {
-    it('should update existing torrent if found', async () => {
+    it('should update existing torrent if found and return false', async () => {
       mocks.mockFindUnique.mockResolvedValue({ id: 1, guid: 'abc' });
-      await repo.upsertTorrent({ guid: 'abc', title: 'test' });
+      const res = await repo.upsertTorrent({ guid: 'abc', title: 'test' });
 
       expect(mocks.mockFindUnique).toHaveBeenCalledWith({ where: { guid: 'abc' } });
       expect(mocks.mockUpdate).toHaveBeenCalledWith({
@@ -44,17 +44,19 @@ describe('TorrentRepository', () => {
         data: { guid: 'abc', title: 'test' },
       });
       expect(mocks.mockCreate).not.toHaveBeenCalled();
+      expect(res).toBe(false);
     });
 
-    it('should create new torrent if not found', async () => {
+    it('should create new torrent if not found and return true', async () => {
       mocks.mockFindUnique.mockResolvedValue(null);
-      await repo.upsertTorrent({ guid: 'abc', title: 'test' });
+      const res = await repo.upsertTorrent({ guid: 'abc', title: 'test' });
 
       expect(mocks.mockFindUnique).toHaveBeenCalledWith({ where: { guid: 'abc' } });
       expect(mocks.mockCreate).toHaveBeenCalledWith({
         data: { guid: 'abc', title: 'test' },
       });
       expect(mocks.mockUpdate).not.toHaveBeenCalled();
+      expect(res).toBe(true);
     });
   });
 

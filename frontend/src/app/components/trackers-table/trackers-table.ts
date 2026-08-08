@@ -32,7 +32,7 @@ import { ProwlarrSyncModal } from '../prowlarr-sync-modal/prowlarr-sync-modal';
 })
 export class TrackersTable implements OnInit, OnDestroy, AfterViewInit {
   trackersDataSource = new MatTableDataSource<any>();
-  trackerColumns: string[] = ['name', 'lastRun', 'nextRun', 'refreshStatus', 'torrentCount', 'status', 'actions'];
+  trackerColumns: string[] = ['name', 'lastRun', 'nextRun', 'refreshStatus', 'apiStatus', 'torrentCount', 'status', 'actions'];
   refreshInterval: any;
 
   @ViewChild('trackerSort') trackerSort!: MatSort;
@@ -42,6 +42,10 @@ export class TrackersTable implements OnInit, OnDestroy, AfterViewInit {
 
   get hasActiveTrackers(): boolean {
     return this.trackersDataSource.data.some(t => t.active);
+  }
+
+  isCooldownActive(t: any): boolean {
+    return !!t.apiCooldownUntil && new Date(t.apiCooldownUntil).getTime() > Date.now();
   }
 
   constructor(

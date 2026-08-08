@@ -216,7 +216,7 @@ export class TorznabController {
     return res.send(caps.end({ prettyPrint: true }));
   }
 
-  private async processApiItem(item: any, def: any) {
+  private async processApiItem(item: any, def: any): Promise<boolean> {
     if (!item.category || item.category === 'Unknown') {
       if (def.parser.parseCategory) {
         item.category = def.parser.parseCategory(item, item.description || '');
@@ -227,7 +227,7 @@ export class TorznabController {
       }
     }
     try {
-      await this.repository.upsertTorrent({
+      return await this.repository.upsertTorrent({
         title: item.title,
         guid: item.guid,
         link: item.link,
@@ -242,6 +242,7 @@ export class TorznabController {
       });
     } catch (e) {
       console.error('Failed to cache API torrent', e);
+      return false;
     }
   }
 
@@ -275,10 +276,14 @@ export class TorznabController {
       if (def?.parser?.apiSearch) {
         try {
           const apiItems = await def.parser.apiSearch(searchQuery, tracker.url);
+          let apiAdded = 0;
           for (const item of apiItems) {
-            await this.processApiItem(item, def);
+            const added = await this.processApiItem(item, def);
+            if (added) apiAdded++;
             remoteResults.push(item);
           }
+          const searchTerm = searchQuery.q || searchQuery.imdbid || 'recent';
+          await this.trackerRepo.updateApiStatus(tracker.id, apiAdded, searchTerm);
         } catch (e: any) {
           await this.handleApiSearchError(e, tracker);
         }

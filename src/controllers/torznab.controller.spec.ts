@@ -8,6 +8,10 @@ const mockCountTorrents = vi.fn();
 const mockSearchTorrents = vi.fn();
 const mockCountSearchTorrents = vi.fn();
 
+const mockGetAllTrackers = vi.fn().mockResolvedValue([]);
+const mockUpdateApiStatus = vi.fn();
+const mockSetApiCooldown = vi.fn();
+
 vi.mock('../repositories/torrent.repository', () => {
   return {
     TorrentRepository: class {
@@ -15,6 +19,17 @@ vi.mock('../repositories/torrent.repository', () => {
       countTorrents = mockCountTorrents;
       searchTorrents = mockSearchTorrents;
       countSearchTorrents = mockCountSearchTorrents;
+      upsertTorrent = vi.fn().mockResolvedValue(true);
+    },
+  };
+});
+
+vi.mock('../repositories/tracker.repository', () => {
+  return {
+    TrackerRepository: class {
+      getAllTrackers = mockGetAllTrackers;
+      updateApiStatus = mockUpdateApiStatus;
+      setApiCooldown = mockSetApiCooldown;
     },
   };
 });
@@ -112,6 +127,25 @@ describe('TorznabController', () => {
       const res = await request(app).get('/api');
       expect(res.status).toBe(200);
       expect(mockGetTorrents).toHaveBeenCalledWith(50, 0, undefined);
+    });
+
+    it('should perform API search for missing torrents and save status', async () => {
+      mockSearchTorrents.mockResolvedValue([]);
+      mockCountSearchTorrents.mockResolvedValue(0);
+      mockGetAllTrackers.mockResolvedValue([
+        {
+          id: 99,
+          name: 'TV Vault', // which has a parser
+          url: 'http://tracker',
+          active: true,
+          allowApi: true,
+        },
+      ]);
+
+      const res = await request(app).get('/api?t=search&q=Show');
+      expect(res.status).toBe(200);
+      expect(mockSearchTorrents).toHaveBeenCalledWith('Show', undefined, 50, 0, undefined);
+      expect(mockUpdateApiStatus).toHaveBeenCalledWith(99, 0, 'Show');
     });
   });
 

@@ -1,7 +1,7 @@
 import prisma from '../config/db.config';
 
 export class TorrentRepository {
-  public async upsertTorrent(data: any): Promise<void> {
+  public async upsertTorrent(data: any): Promise<boolean> {
     if (!data.imdbId && data.description) {
       const match = data.description.match(/\[imdb=(tt\d+)\]/i);
       if (match) {
@@ -14,8 +14,10 @@ export class TorrentRepository {
     });
     if (existing) {
       await prisma.torrent.update({ where: { id: existing.id }, data });
+      return false;
     } else {
       await prisma.torrent.create({ data });
+      return true;
     }
   }
 

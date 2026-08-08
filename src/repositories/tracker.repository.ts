@@ -66,4 +66,15 @@ export class TrackerRepository {
       data: { apiCooldownUntil: cooldownUntil },
     });
   }
+
+  public async updateApiStatus(id: number, addedCount: number, searchTerm?: string) {
+    const data: any = { lastApiAddedCount: addedCount };
+    if (searchTerm !== undefined) {
+      data.lastApiSearchTerm = searchTerm;
+    }
+    return await prisma.tracker.update({
+      where: { id },
+      data,
+    });
+  }
 }

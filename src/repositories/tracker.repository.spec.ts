@@ -95,4 +95,29 @@ describe('TrackerRepository', () => {
       }),
     });
   });
+
+  it('setApiCooldown should update cooldown timestamp', async () => {
+    mocks.mockUpdate.mockResolvedValue({ id: 1 });
+    const date = new Date();
+    await repo.setApiCooldown(1, date);
+    expect(mocks.mockUpdate).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { apiCooldownUntil: date },
+    });
+  });
+
+  it('updateApiStatus should update API status fields', async () => {
+    mocks.mockUpdate.mockResolvedValue({ id: 1 });
+    await repo.updateApiStatus(1, 10, 'search');
+    expect(mocks.mockUpdate).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { lastApiAddedCount: 10, lastApiSearchTerm: 'search' },
+    });
+
+    await repo.updateApiStatus(1, 0);
+    expect(mocks.mockUpdate).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { lastApiAddedCount: 0 },
+    });
+  });
 });
