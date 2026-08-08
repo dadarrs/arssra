@@ -1,8 +1,8 @@
 <mat-form-field appearance="fill" class="search-field full-width search-field-spacing" subscriptSizing="dynamic">
   <mat-icon matPrefix>search</mat-icon>
-  <mat-label for="search-input">Search torrents</mat-label>
-  <input id="search-input" aria-label="Search torrents" matInput type="text" [(ngModel)]="searchQuery"
-    (ngModelChange)="onSearchModel($event)" placeholder="Search torrents" [matAutocomplete]="auto" />
+  <mat-label for="search-input">Search locally indexed releases</mat-label>
+  <input id="search-input" aria-label="Search locally indexed releases" matInput type="text" [(ngModel)]="searchQuery"
+    (ngModelChange)="onSearchModel($event)" placeholder="Search locally indexed releases..." [matAutocomplete]="auto" />
   @if (searchQuery) {
   <button mat-icon-button matSuffix (click)="clearSearch()">
     <mat-icon>close</mat-icon>
