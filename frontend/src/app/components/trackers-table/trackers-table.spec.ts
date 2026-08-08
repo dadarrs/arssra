@@ -50,6 +50,16 @@ describe('TrackersTable', () => {
     expect(component.hasActiveTrackers).toBe(false);
   });
 
+  it('should conditionally display the apiStatus column based on allowApi', () => {
+    // Initial load in beforeEach has allowApi: true
+    expect(component.trackerColumns).toContain('apiStatus');
+
+    // Load with no allowApi
+    mockApiService.getTrackers.mockReturnValue(of([{ id: 2, name: 'Tracker B', allowApi: false }]));
+    component.fetchTrackers();
+    expect(component.trackerColumns).not.toContain('apiStatus');
+  });
+
   it('should call api to toggle tracker', () => {
     component.toggleTracker(1, false);
     expect(mockApiService.toggleTracker).toHaveBeenCalledWith(1, false);

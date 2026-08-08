@@ -56,6 +56,79 @@ export class TorznabController {
     return originalDownloadUrl;
   }
 
+  private appendItemToTorznabResponse(
+    item: any,
+    root: any,
+    req: Request,
+    trackerUrlMap: Map<string, string>,
+  ) {
+    const pubDateStr = this.getPubDateString(item);
+    const itemSize = this.getItemSize(item);
+    const originalDownloadUrl = this.getDownloadUrl(item, trackerUrlMap);
+    const proxiedUrl = originalDownloadUrl
+      ? `${req.protocol}://${req.get('host')}${req.baseUrl}/download?url=${encodeURIComponent(originalDownloadUrl)}`
+      : null;
+
+    const itemCategoryStr = item.category || '2000';
+    const parentCategory = itemCategoryStr.length === 4 ? itemCategoryStr[0] + '000' : '2000';
+
+    const itemNode = root
+      .ele('item')
+      .ele('title')
+      .txt(item.title)
+      .up()
+      .ele('guid')
+      .txt(item.guid)
+      .up()
+      .ele('link')
+      .txt(proxiedUrl || item.link)
+      .up()
+      .ele('comments')
+      .txt(item.comments || item.guid)
+      .up()
+      .ele('pubDate')
+      .txt(pubDateStr)
+      .up()
+      .ele('size')
+      .txt(itemSize?.toString() || '0')
+      .up();
+
+    itemNode
+      .ele('category')
+      .txt(parentCategory)
+      .up()
+      .ele('category')
+      .txt(itemCategoryStr)
+      .up()
+      .ele('description')
+      .txt(item.description || '')
+      .up();
+
+    if (proxiedUrl) {
+      itemNode
+        .ele('enclosure', {
+          url: proxiedUrl,
+          length: item.enclosure_length?.toString() || itemSize?.toString() || '0',
+          type: item.enclosure_type || 'application/x-bittorrent',
+        })
+        .up();
+    }
+
+    itemNode.ele('torznab:attr', { name: 'category', value: itemCategoryStr }).up();
+    itemNode.ele('newznab:attr', { name: 'category', value: itemCategoryStr }).up();
+
+    if (parentCategory !== itemCategoryStr) {
+      itemNode.ele('torznab:attr', { name: 'category', value: parentCategory }).up();
+      itemNode.ele('newznab:attr', { name: 'category', value: parentCategory }).up();
+    }
+
+    itemNode.ele('torznab:attr', { name: 'seeders', value: (item.seeders ?? 1).toString() }).up();
+    itemNode.ele('torznab:attr', { name: 'peers', value: (item.peers ?? 1).toString() }).up();
+    itemNode.ele('newznab:attr', { name: 'seeders', value: (item.seeders ?? 1).toString() }).up();
+    itemNode.ele('newznab:attr', { name: 'peers', value: (item.peers ?? 1).toString() }).up();
+    itemNode.up();
+  }
+
   private generateTorznabResponse(
     req: Request,
     items: any[],
@@ -93,71 +166,7 @@ export class TorznabController {
       .up();
 
     items.forEach((item) => {
-      const pubDateStr = this.getPubDateString(item);
-      const itemSize = this.getItemSize(item);
-      const originalDownloadUrl = this.getDownloadUrl(item, trackerUrlMap);
-      const proxiedUrl = originalDownloadUrl
-        ? `${req.protocol}://${req.get('host')}${req.baseUrl}/download?url=${encodeURIComponent(originalDownloadUrl)}`
-        : null;
-
-      const itemCategoryStr = item.category || '2000';
-      const parentCategory = itemCategoryStr.length === 4 ? itemCategoryStr[0] + '000' : '2000';
-
-      const itemNode = root
-        .ele('item')
-        .ele('title')
-        .txt(item.title)
-        .up()
-        .ele('guid')
-        .txt(item.guid)
-        .up()
-        .ele('link')
-        .txt(proxiedUrl || item.link)
-        .up()
-        .ele('comments')
-        .txt(item.comments || item.guid)
-        .up()
-        .ele('pubDate')
-        .txt(pubDateStr)
-        .up()
-        .ele('size')
-        .txt(itemSize?.toString() || '0')
-        .up();
-
-      itemNode
-        .ele('category')
-        .txt(parentCategory)
-        .up()
-        .ele('category')
-        .txt(itemCategoryStr)
-        .up()
-        .ele('description')
-        .txt(item.description || '')
-        .up();
-
-      if (proxiedUrl) {
-        itemNode
-          .ele('enclosure', {
-            url: proxiedUrl,
-            length: item.enclosure_length?.toString() || itemSize?.toString() || '0',
-            type: item.enclosure_type || 'application/x-bittorrent',
-          })
-          .up();
-      }
-
-      itemNode.ele('torznab:attr', { name: 'category', value: itemCategoryStr }).up();
-      itemNode.ele('newznab:attr', { name: 'category', value: itemCategoryStr }).up();
-
-      if (parentCategory !== itemCategoryStr) {
-        itemNode.ele('torznab:attr', { name: 'category', value: parentCategory }).up();
-        itemNode.ele('newznab:attr', { name: 'category', value: parentCategory }).up();
-      }
-
-      itemNode.ele('torznab:attr', { name: 'seeders', value: (item.seeders ?? 1).toString() }).up();
-      itemNode.ele('torznab:attr', { name: 'peers', value: (item.peers ?? 1).toString() }).up();
-      itemNode.ele('newznab:attr', { name: 'seeders', value: (item.seeders ?? 1).toString() }).up();
-      itemNode.ele('newznab:attr', { name: 'peers', value: (item.peers ?? 1).toString() }).up();
-      itemNode.up();
+      this.appendItemToTorznabResponse(item, root, req, trackerUrlMap);
     });
 
     return root.end({ prettyPrint: true });
@@ -292,44 +301,37 @@ export class TorznabController {
     return remoteResults;
   }
 
-  public async handleRequest(req: Request, res: Response) {
-    const { t, q, cat, offset = '0', limit = '50' } = req.query;
-    const parsedOffset = Number.parseInt(offset as string, 10) || 0;
-    const parsedLimit = Number.parseInt(limit as string, 10) || 50;
-
-    const categories = typeof cat === 'string' ? cat.split(',') : undefined;
-
-    if (t === 'caps') {
-      return this.generateCaps(res);
-    }
-
+  private async getTorznabItems(
+    q: string | undefined,
+    imdbid: string | undefined,
+    season: string | undefined,
+    ep: string | undefined,
+    categories: string[] | undefined,
+    parsedLimit: number,
+    parsedOffset: number,
+    isSearchQuery: boolean,
+    hasSearchTerm: string | undefined,
+  ): Promise<{ items: any[]; totalCount: number }> {
     let items: any[];
     let totalCount: number;
 
-    const isSearchQuery = t === 'search' || t === 'tvsearch' || t === 'movie' || (!t && q);
-    const hasSearchTerm = q || req.query.imdbid;
-
     if (isSearchQuery && hasSearchTerm) {
       items = await this.repository.searchTorrents(
-        q as string | undefined,
-        req.query.imdbid as string | undefined,
+        q,
+        imdbid,
         parsedLimit,
         parsedOffset,
         categories,
       );
-      totalCount = await this.repository.countSearchTorrents(
-        q as string | undefined,
-        req.query.imdbid as string | undefined,
-        categories,
-      );
+      totalCount = await this.repository.countSearchTorrents(q, imdbid, categories);
 
       const trackers = await this.trackerRepo.getAllTrackers();
       const activeTrackers = trackers.filter((tr) => tr.active);
       const searchQuery: TorznabSearchQuery = {
-        q: q as string,
-        imdbid: req.query.imdbid as string,
-        season: req.query.season as string,
-        ep: req.query.ep as string,
+        q,
+        imdbid,
+        season,
+        ep,
         categories,
       };
 
@@ -350,6 +352,34 @@ export class TorznabController {
       items = await this.repository.getTorrents(parsedLimit, parsedOffset, categories);
       totalCount = await this.repository.countTorrents(categories);
     }
+    return { items, totalCount };
+  }
+
+  public async handleRequest(req: Request, res: Response) {
+    const { t, q, cat, offset = '0', limit = '50' } = req.query;
+    const parsedOffset = Number.parseInt(offset as string, 10) || 0;
+    const parsedLimit = Number.parseInt(limit as string, 10) || 50;
+
+    const categories = typeof cat === 'string' ? cat.split(',') : undefined;
+
+    if (t === 'caps') {
+      return this.generateCaps(res);
+    }
+
+    const isSearchQuery = t === 'search' || t === 'tvsearch' || t === 'movie' || (!t && !!q);
+    const hasSearchTerm = (q as string) || (req.query.imdbid as string);
+
+    const { items, totalCount } = await this.getTorznabItems(
+      q as string | undefined,
+      req.query.imdbid as string | undefined,
+      req.query.season as string | undefined,
+      req.query.ep as string | undefined,
+      categories,
+      parsedLimit,
+      parsedOffset,
+      isSearchQuery,
+      hasSearchTerm,
+    );
 
     const trackers = await this.trackerRepo.getAllTrackers();
     const trackerUrlMap = new Map(trackers.map((t) => [t.name, t.url]));

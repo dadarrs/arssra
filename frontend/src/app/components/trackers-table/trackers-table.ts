@@ -74,6 +74,14 @@ export class TrackersTable implements OnInit, OnDestroy, AfterViewInit {
   fetchTrackers() {
     this.api.getTrackers().subscribe((res) => {
       this.trackersDataSource.data = res;
+      
+      const hasApi = res.some((t: any) => t.allowApi);
+      if (hasApi) {
+        this.trackerColumns = ['name', 'lastRun', 'nextRun', 'refreshStatus', 'apiStatus', 'torrentCount', 'status', 'actions'];
+      } else {
+        this.trackerColumns = ['name', 'lastRun', 'nextRun', 'refreshStatus', 'torrentCount', 'status', 'actions'];
+      }
+      
       this.cdr.detectChanges();
     });
   }
