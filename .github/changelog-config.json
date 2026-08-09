@@ -25,17 +25,20 @@
   "label_extractor": [
     {
       "pattern": "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)",
-      "target": "$1"
+      "target": "$1",
+      "flags": "gu"
     },
     {
       "pattern": ".*dependabot.*",
-      "target": "dependabot"
+      "target": "ignore",
+      "flags": "gu"
     },
     {
       "pattern": "^Merge (pull request|branch).*",
-      "target": "ignore"
+      "target": "ignore",
+      "flags": "gu"
     }
   ],
-  "template": "${{CHANGELOG}}",
+  "template": "${{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n${{UNCATEGORIZED}}\n</details>",
   "commit_template": "- ${{TITLE}}"
 }
