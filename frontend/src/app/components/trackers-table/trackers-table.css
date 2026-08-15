@@ -214,6 +214,14 @@ code {
   gap: 4px;
 }
 
+.status-warning-text {
+  color: #f57f17;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .status-error-icon {
   font-size: 14px;
   height: 14px;
@@ -223,6 +231,10 @@ code {
 
 .status-pending-text {
   color: #757575;
+}
+
+.status-disabled-text {
+  opacity: 0.5;
 }
 
 .search-field-spacing {
@@ -374,6 +386,10 @@ code {
 
 :host-context(html.dark-theme) .status-failed-text {
   color: #e57373;
+}
+
+:host-context(html.dark-theme) .status-warning-text {
+  color: #ffb74d;
 }
 
 :host-context(html.dark-theme) .status-pending-text {

@@ -20,6 +20,7 @@ model Tracker {
   apiCooldownUntil  DateTime?
   lastApiAddedCount Int?
   lastApiSearchTerm String?
+  lastApiError      String?
   allowApi          Boolean  @default(false)
   created_at        DateTime @default(now())
 

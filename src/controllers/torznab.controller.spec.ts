@@ -11,6 +11,7 @@ const mockCountSearchTorrents = vi.fn();
 const mockGetAllTrackers = vi.fn().mockResolvedValue([]);
 const mockUpdateApiStatus = vi.fn();
 const mockSetApiCooldown = vi.fn();
+const mockUpdateApiError = vi.fn();
 
 vi.mock('../repositories/torrent.repository', () => {
   return {
@@ -30,6 +31,7 @@ vi.mock('../repositories/tracker.repository', () => {
       getAllTrackers = mockGetAllTrackers;
       updateApiStatus = mockUpdateApiStatus;
       setApiCooldown = mockSetApiCooldown;
+      updateApiError = mockUpdateApiError;
     },
   };
 });
@@ -182,6 +184,24 @@ describe('TorznabController', () => {
       expect(global.fetch).toHaveBeenCalledWith(
         'http://tracker.com/file.torrent',
         expect.any(Object),
+      );
+    });
+
+    it('should log an api error when download fails with 401 or 403', async () => {
+      mockGetAllTrackers.mockResolvedValue([{ id: 10, url: 'http://tracker.com/rss' }]);
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+      });
+
+      const res = await request(app).get('/api/download?url=http://tracker.com/file.torrent');
+
+      expect(res.status).toBe(403);
+      expect(mockGetAllTrackers).toHaveBeenCalled();
+      expect(mockUpdateApiError).toHaveBeenCalledWith(
+        10,
+        'Auth key expired (download failed) - update RSS URL',
       );
     });
 

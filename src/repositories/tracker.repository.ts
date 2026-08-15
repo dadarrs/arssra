@@ -32,7 +32,16 @@ export class TrackerRepository {
     allowApi?: boolean,
   ) {
     const data: any = {};
-    if (url !== undefined) data.url = url;
+    if (url !== undefined) {
+      const existing = await prisma.tracker.findUnique({ where: { id } });
+      data.url = url;
+      if (existing && existing.url !== url) {
+        data.lastError = null;
+        data.lastApiError = null;
+        data.apiCooldownUntil = null;
+        data.lastStatus = null;
+      }
+    }
     if (cronSchedule !== undefined) data.cronSchedule = cronSchedule;
     if (name !== undefined) data.name = name;
     if (allowApi !== undefined) data.allowApi = allowApi;
@@ -68,13 +77,22 @@ export class TrackerRepository {
   }
 
   public async updateApiStatus(id: number, addedCount: number, searchTerm?: string) {
-    const data: any = { lastApiAddedCount: addedCount };
+    const data: any = { lastApiAddedCount: addedCount, lastApiError: null };
     if (searchTerm !== undefined) {
       data.lastApiSearchTerm = searchTerm;
     }
     return await prisma.tracker.update({
       where: { id },
       data,
+    });
+  }
+
+  public async updateApiError(id: number, errorMessage: string | null) {
+    return await prisma.tracker.update({
+      where: { id },
+      data: {
+        lastApiError: errorMessage,
+      },
     });
   }
 }

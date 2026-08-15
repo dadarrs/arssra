@@ -261,8 +261,48 @@ export class TorznabController {
       const cooldownUntil = new Date(Date.now() + seconds * 1000);
       console.log(`Setting API cooldown for ${tracker.name} until ${cooldownUntil}`);
       await this.trackerRepo.setApiCooldown(tracker.id, cooldownUntil);
+    } else if (e.message === 'AUTH_EXPIRED') {
+      console.warn(`Auth key expired for ${tracker.name}`);
+      await this.trackerRepo.updateApiError(tracker.id, 'Auth key expired - update RSS URL');
     } else {
       console.error(`API search failed for ${tracker.name}`, e);
+      await this.trackerRepo.updateApiError(tracker.id, `API Error: ${e.message}`);
+    }
+  }
+
+  private async processTrackerApiSearch(
+    tracker: any,
+    searchQuery: TorznabSearchQuery,
+  ): Promise<any[]> {
+    if (!tracker.allowApi) return [];
+
+    if (tracker.apiCooldownUntil && new Date() < tracker.apiCooldownUntil) {
+      console.log(
+        `Skipping API search for ${tracker.name} due to active cooldown until ${tracker.apiCooldownUntil}`,
+      );
+      return [];
+    }
+
+    const def = TRACKERS.find((d) => d.name === tracker.name);
+    if (!def?.parser?.apiSearch) return [];
+
+    try {
+      const apiItems = await def.parser.apiSearch(searchQuery, tracker.url);
+      let apiAdded = 0;
+      const results: any[] = [];
+
+      for (const item of apiItems) {
+        const added = await this.processApiItem(item, def);
+        if (added) apiAdded++;
+        results.push(item);
+      }
+
+      const searchTerm = searchQuery.q || searchQuery.imdbid || 'recent';
+      await this.trackerRepo.updateApiStatus(tracker.id, apiAdded, searchTerm);
+      return results;
+    } catch (e: any) {
+      await this.handleApiSearchError(e, tracker);
+      return [];
     }
   }
 
@@ -272,41 +312,14 @@ export class TorznabController {
   ): Promise<any[]> {
     const remoteResults: any[] = [];
     for (const tracker of activeTrackers) {
-      if (!tracker.allowApi) continue;
-
-      if (tracker.apiCooldownUntil && new Date() < tracker.apiCooldownUntil) {
-        console.log(
-          `Skipping API search for ${tracker.name} due to active cooldown until ${tracker.apiCooldownUntil}`,
-        );
-        continue;
-      }
-
-      const def = TRACKERS.find((d) => d.name === tracker.name);
-      if (def?.parser?.apiSearch) {
-        try {
-          const apiItems = await def.parser.apiSearch(searchQuery, tracker.url);
-          let apiAdded = 0;
-          for (const item of apiItems) {
-            const added = await this.processApiItem(item, def);
-            if (added) apiAdded++;
-            remoteResults.push(item);
-          }
-          const searchTerm = searchQuery.q || searchQuery.imdbid || 'recent';
-          await this.trackerRepo.updateApiStatus(tracker.id, apiAdded, searchTerm);
-        } catch (e: any) {
-          await this.handleApiSearchError(e, tracker);
-        }
-      }
+      const results = await this.processTrackerApiSearch(tracker, searchQuery);
+      remoteResults.push(...results);
     }
     return remoteResults;
   }
 
   private async getTorznabItems(
-    q: string | undefined,
-    imdbid: string | undefined,
-    season: string | undefined,
-    ep: string | undefined,
-    categories: string[] | undefined,
+    searchQuery: TorznabSearchQuery,
     parsedLimit: number,
     parsedOffset: number,
     isSearchQuery: boolean,
@@ -317,23 +330,20 @@ export class TorznabController {
 
     if (isSearchQuery && hasSearchTerm) {
       items = await this.repository.searchTorrents(
-        q,
-        imdbid,
+        searchQuery.q,
+        searchQuery.imdbid,
         parsedLimit,
         parsedOffset,
-        categories,
+        searchQuery.categories,
       );
-      totalCount = await this.repository.countSearchTorrents(q, imdbid, categories);
+      totalCount = await this.repository.countSearchTorrents(
+        searchQuery.q,
+        searchQuery.imdbid,
+        searchQuery.categories,
+      );
 
       const trackers = await this.trackerRepo.getAllTrackers();
       const activeTrackers = trackers.filter((tr) => tr.active);
-      const searchQuery: TorznabSearchQuery = {
-        q,
-        imdbid,
-        season,
-        ep,
-        categories,
-      };
 
       const remoteResults = await this.performApiSearch(searchQuery, activeTrackers);
 
@@ -349,8 +359,8 @@ export class TorznabController {
       }
       totalCount += newlyAddedCount;
     } else {
-      items = await this.repository.getTorrents(parsedLimit, parsedOffset, categories);
-      totalCount = await this.repository.countTorrents(categories);
+      items = await this.repository.getTorrents(parsedLimit, parsedOffset, searchQuery.categories);
+      totalCount = await this.repository.countTorrents(searchQuery.categories);
     }
     return { items, totalCount };
   }
@@ -369,12 +379,16 @@ export class TorznabController {
     const isSearchQuery = t === 'search' || t === 'tvsearch' || t === 'movie' || (!t && !!q);
     const hasSearchTerm = (q as string) || (req.query.imdbid as string);
 
-    const { items, totalCount } = await this.getTorznabItems(
-      q as string | undefined,
-      req.query.imdbid as string | undefined,
-      req.query.season as string | undefined,
-      req.query.ep as string | undefined,
+    const searchQuery: TorznabSearchQuery = {
+      q: q as string | undefined,
+      imdbid: req.query.imdbid as string | undefined,
+      season: req.query.season as string | undefined,
+      ep: req.query.ep as string | undefined,
       categories,
+    };
+
+    const { items, totalCount } = await this.getTorznabItems(
+      searchQuery,
       parsedLimit,
       parsedOffset,
       isSearchQuery,
@@ -471,6 +485,26 @@ export class TorznabController {
       });
 
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          try {
+            const trackers = await this.trackerRepo.getAllTrackers();
+            const matchingTracker = trackers.find((t) => {
+              try {
+                return new URL(t.url).hostname === parsed.hostname;
+              } catch {
+                return false;
+              }
+            });
+            if (matchingTracker) {
+              await this.trackerRepo.updateApiError(
+                matchingTracker.id,
+                'Auth key expired (download failed) - update RSS URL',
+              );
+            }
+          } catch (e) {
+            console.error('Failed to log proxy auth error', e);
+          }
+        }
         return res.status(response.status).send(`Error fetching torrent: ${response.statusText}`);
       }
 
