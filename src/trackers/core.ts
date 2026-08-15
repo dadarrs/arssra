@@ -35,12 +35,6 @@ export function resolveTorznabCategory(catString: string, qualString: string): s
   if (catString.includes('anime')) return '5070';
   if (/documentary|factual/.test(catString)) return '5080';
   if (catString.includes('foreign')) return '5020';
-  if (catString.includes('radio') || catString.includes('mp3')) return '3010';
-  if (
-    /soundtrack|original score|ost|flac|audio|music/i.test(catString) ||
-    /soundtrack|original score|ost|flac|audio|music/i.test(qualString)
-  )
-    return '3000';
 
   const fmt = getFormatIndex(qualString);
 
@@ -53,6 +47,15 @@ export function resolveTorznabCategory(catString: string, qualString: string): s
   ) {
     return ['5040', '5030', '5000'][fmt];
   }
+
+  if (catString.includes('radio') || catString.includes('mp3')) return '3010';
+  if (
+    /\baudio\b|\bmusic\b|\bsoundtrack\b|\boriginal score\b|\bost\b|\baudiobook\b/i.test(
+      catString,
+    ) ||
+    /\bsoundtrack\b|\boriginal score\b|\bost\b|\bflac\b|\baudiobook\b/i.test(qualString)
+  )
+    return '3000';
 
   return 'Unknown';
 }
