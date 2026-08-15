@@ -4,6 +4,28 @@ console.log = () => {};
 dotenv.config();
 console.log = _log;
 
+if (process.env.NODE_ENV !== 'test') {
+  const originalLog = console.log;
+  const originalInfo = console.info;
+  const originalWarn = console.warn;
+  const originalError = console.error;
+
+  const colors = {
+    reset: '\x1b[0m',
+    cyan: '\x1b[36m',
+    yellow: '\x1b[33m',
+    red: '\x1b[31m',
+    gray: '\x1b[90m',
+  };
+
+  const formatTime = (color: string) => `${color}[${new Date().toISOString()}]${colors.reset}`;
+
+  console.log = (...args) => originalLog(formatTime(colors.gray), ...args);
+  console.info = (...args) => originalInfo(formatTime(colors.cyan), ...args);
+  console.warn = (...args) => originalWarn(formatTime(colors.yellow), ...args);
+  console.error = (...args) => originalError(formatTime(colors.red), ...args);
+}
+
 import express from 'express';
 import path from 'node:path';
 import { configureRoutes } from './routes/api.routes';
