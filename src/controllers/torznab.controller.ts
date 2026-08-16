@@ -566,9 +566,28 @@ export class TorznabController {
       if (hasPort && !/^\d+$/.test(parsed.port)) {
         return res.status(400).send('Invalid port');
       }
-      const portString = hasPort ? `:${parsed.port}` : '';
-      const safeUrl = `${parsed.protocol}//${parsed.hostname}${portString}${parsed.pathname}${parsed.search}`;
-      const safeParsed = new URL(safeUrl);
+
+      // Disallow credentials in target URL.
+      if (parsed.username || parsed.password) {
+        return res.status(400).send('Invalid target URL');
+      }
+
+      // Basic path hardening against traversal and encoded slash/backslash tricks.
+      const decodedPathname = decodeURIComponent(parsed.pathname);
+      if (
+        decodedPathname.includes('..') ||
+        parsed.pathname.includes('%2f') ||
+        parsed.pathname.includes('%2F') ||
+        parsed.pathname.includes('%5c') ||
+        parsed.pathname.includes('%5C')
+      ) {
+        return res.status(400).send('Invalid path');
+      }
+
+      const base = `${parsed.protocol}//${parsed.hostname}${hasPort ? `:${parsed.port}` : ''}`;
+      const safeParsed = new URL(base);
+      safeParsed.pathname = parsed.pathname;
+      safeParsed.search = parsed.search;
 
       // Re-check host on canonical form
       const isAllowedCanonical = await this.isAllowedHost(safeParsed.hostname);
@@ -594,7 +613,7 @@ export class TorznabController {
 
       let response: globalThis.Response;
       try {
-        response = await this.fetchWithManualRedirects(safeUrl, requestHeaders);
+        response = await this.fetchWithManualRedirects(safeParsed.toString(), requestHeaders);
       } catch (err: any) {
         if (err instanceof ProxyError) {
           return res.status(err.status).send(err.message);
@@ -603,7 +622,7 @@ export class TorznabController {
       }
 
       if (!response.ok) {
-        await this.handleProxyAuthError(parsed.hostname, response.status);
+        await this.handleProxyAuthError(safeParsed.hostname, response.status);
         return res.status(response.status).send(`Error fetching torrent: ${response.statusText}`);
       }
 
