@@ -541,6 +541,36 @@ export class TorznabController {
     throw new ProxyError(508, 'Too many redirects');
   }
 
+  private buildSafeUrl(parsed: URL): URL {
+    const hasPort = parsed.port !== '';
+    if (hasPort && !/^\d+$/.test(parsed.port)) {
+      throw new ProxyError(400, 'Invalid port');
+    }
+
+    if (parsed.username || parsed.password) {
+      throw new ProxyError(400, 'Invalid target URL');
+    }
+
+    const decodedPathname = decodeURIComponent(parsed.pathname);
+    if (
+      decodedPathname.includes('..') ||
+      parsed.pathname.includes('%2f') ||
+      parsed.pathname.includes('%2F') ||
+      parsed.pathname.includes('%5c') ||
+      parsed.pathname.includes('%5C')
+    ) {
+      throw new ProxyError(400, 'Invalid path');
+    }
+
+    const portString = hasPort ? `:${parsed.port}` : '';
+    const base = `${parsed.protocol}//${parsed.hostname}${portString}`;
+    const safeParsed = new URL(base);
+    safeParsed.pathname = parsed.pathname;
+    safeParsed.search = parsed.search;
+
+    return safeParsed;
+  }
+
   public async proxyDownload(req: Request, res: Response) {
     const targetUrl = req.query.url as string;
     if (!targetUrl) {
@@ -557,22 +587,6 @@ export class TorznabController {
       // SSRF protection
       const isAllowed = await this.isAllowedHost(parsed.hostname);
       if (!isAllowed) {
-        return res.status(403).send('Forbidden target host');
-      }
-
-      // Canonicalize/sanitize URL to avoid passing raw user input to fetch.
-      // Keep only protocol, host, optional numeric port, path and query.
-      const hasPort = parsed.port !== '';
-      if (hasPort && !/^\d+$/.test(parsed.port)) {
-        return res.status(400).send('Invalid port');
-      }
-      const portString = hasPort ? `:${parsed.port}` : '';
-      const safeUrl = `${parsed.protocol}//${parsed.hostname}${portString}${parsed.pathname}${parsed.search}`;
-      const safeParsed = new URL(safeUrl);
-
-      // Re-check host on canonical form
-      const isAllowedCanonical = await this.isAllowedHost(safeParsed.hostname);
-      if (!isAllowedCanonical) {
         return res.status(403).send('Forbidden target host');
       }
 
@@ -593,8 +607,17 @@ export class TorznabController {
       };
 
       let response: globalThis.Response;
+      let safeParsed: URL;
       try {
-        response = await this.fetchWithManualRedirects(safeUrl, requestHeaders);
+        safeParsed = this.buildSafeUrl(parsed);
+
+        // Re-check host on canonical form
+        const isAllowedCanonical = await this.isAllowedHost(safeParsed.hostname);
+        if (!isAllowedCanonical) {
+          throw new ProxyError(403, 'Forbidden target host');
+        }
+
+        response = await this.fetchWithManualRedirects(safeParsed.toString(), requestHeaders);
       } catch (err: any) {
         if (err instanceof ProxyError) {
           return res.status(err.status).send(err.message);
@@ -603,7 +626,7 @@ export class TorznabController {
       }
 
       if (!response.ok) {
-        await this.handleProxyAuthError(parsed.hostname, response.status);
+        await this.handleProxyAuthError(safeParsed.hostname, response.status);
         return res.status(response.status).send(`Error fetching torrent: ${response.statusText}`);
       }
 
