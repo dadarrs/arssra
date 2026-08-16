@@ -5,6 +5,16 @@ import { TrackerRepository } from '../repositories/tracker.repository';
 import { TorznabSearchQuery, resolveTorznabCategory } from '../trackers/core';
 import { TRACKERS } from '../trackers/definitions';
 
+class ProxyError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ProxyError';
+  }
+}
+
 export class TorznabController {
   private readonly repository: TorrentRepository;
   private readonly trackerRepo: TrackerRepository;
@@ -491,6 +501,46 @@ export class TorznabController {
     }
   }
 
+  private async fetchWithManualRedirects(
+    initialUrl: string,
+    requestHeaders: any,
+  ): Promise<globalThis.Response> {
+    let currentUrl = initialUrl;
+    const maxRedirects = 5;
+
+    for (let i = 0; i <= maxRedirects; i++) {
+      const response = await fetch(currentUrl, {
+        headers: requestHeaders,
+        redirect: 'manual',
+      });
+
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get('location');
+        if (!location) {
+          throw new ProxyError(502, 'Invalid redirect response from upstream');
+        }
+
+        const redirectedUrl = new URL(location, currentUrl);
+
+        if (redirectedUrl.protocol !== 'http:' && redirectedUrl.protocol !== 'https:') {
+          throw new ProxyError(403, 'Forbidden target URL');
+        }
+
+        const isAllowedRedirect = await this.isAllowedHost(redirectedUrl.hostname);
+        if (!isAllowedRedirect) {
+          throw new ProxyError(403, 'Forbidden target host');
+        }
+
+        currentUrl = redirectedUrl.toString();
+        continue;
+      }
+
+      return response;
+    }
+
+    throw new ProxyError(508, 'Too many redirects');
+  }
+
   public async proxyDownload(req: Request, res: Response) {
     const targetUrl = req.query.url as string;
     if (!targetUrl) {
@@ -510,23 +560,47 @@ export class TorznabController {
         return res.status(403).send('Forbidden target host');
       }
 
-      const response = await fetch(parsed, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          Accept:
-            'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-          'Sec-Ch-Ua-Mobile': '?0',
-          'Sec-Ch-Ua-Platform': '"Windows"',
-          'Sec-Fetch-Dest': 'document',
-          'Sec-Fetch-Mode': 'navigate',
-          'Sec-Fetch-Site': 'none',
-          'Sec-Fetch-User': '?1',
-          'Upgrade-Insecure-Requests': '1',
-        },
-      });
+      // Canonicalize/sanitize URL to avoid passing raw user input to fetch.
+      // Keep only protocol, host, optional numeric port, path and query.
+      const hasPort = parsed.port !== '';
+      if (hasPort && !/^\d+$/.test(parsed.port)) {
+        return res.status(400).send('Invalid port');
+      }
+      const portString = hasPort ? `:${parsed.port}` : '';
+      const safeUrl = `${parsed.protocol}//${parsed.hostname}${portString}${parsed.pathname}${parsed.search}`;
+      const safeParsed = new URL(safeUrl);
+
+      // Re-check host on canonical form
+      const isAllowedCanonical = await this.isAllowedHost(safeParsed.hostname);
+      if (!isAllowedCanonical) {
+        return res.status(403).send('Forbidden target host');
+      }
+
+      const requestHeaders = {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept:
+          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
+      };
+
+      let response: globalThis.Response;
+      try {
+        response = await this.fetchWithManualRedirects(safeUrl, requestHeaders);
+      } catch (err: any) {
+        if (err instanceof ProxyError) {
+          return res.status(err.status).send(err.message);
+        }
+        throw err;
+      }
 
       if (!response.ok) {
         await this.handleProxyAuthError(parsed.hostname, response.status);
