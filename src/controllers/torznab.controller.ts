@@ -462,9 +462,6 @@ export class TorznabController {
     try {
       // Validating protocol
       const parsed = new URL(targetUrl);
-      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-        return res.status(400).send('Invalid protocol');
-      }
 
       // SSRF protection: only allow downloads from configured tracker hosts
       const trackers = await this.trackerRepo.getAllTrackers();
@@ -480,27 +477,68 @@ export class TorznabController {
           .filter((hostname): hostname is string => Boolean(hostname)),
       );
 
-      if (!allowedHosts.has(parsed.hostname.toLowerCase())) {
-        return res.status(403).send('Forbidden target host');
+      const isAllowedUrl = (url: URL): boolean => {
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+          return false;
+        }
+        return allowedHosts.has(url.hostname.toLowerCase());
+      };
+
+      if (!isAllowedUrl(parsed)) {
+        return res.status(403).send('Forbidden target URL');
       }
 
-      const response = await fetch(parsed, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          Accept:
-            'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-          'Sec-Ch-Ua-Mobile': '?0',
-          'Sec-Ch-Ua-Platform': '"Windows"',
-          'Sec-Fetch-Dest': 'document',
-          'Sec-Fetch-Mode': 'navigate',
-          'Sec-Fetch-Site': 'none',
-          'Sec-Fetch-User': '?1',
-          'Upgrade-Insecure-Requests': '1',
-        },
-      });
+      const requestHeaders = {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept:
+          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
+      };
+
+      let currentUrl = parsed;
+      let response: globalThis.Response | null = null;
+      const maxRedirects = 5;
+
+      for (let i = 0; i <= maxRedirects; i++) {
+        response = await fetch(currentUrl, {
+          headers: requestHeaders,
+          redirect: 'manual',
+        });
+
+        if (response.status >= 300 && response.status < 400) {
+          const location = response.headers.get('location');
+          if (!location) {
+            return res.status(502).send('Invalid redirect response from upstream');
+          }
+
+          const redirectedUrl = new URL(location, currentUrl);
+          if (!isAllowedUrl(redirectedUrl)) {
+            return res.status(403).send('Forbidden redirect target');
+          }
+
+          currentUrl = redirectedUrl;
+          continue;
+        }
+
+        break;
+      }
+
+      if (!response) {
+        return res.status(502).send('Failed to fetch torrent');
+      }
+
+      if (response.status >= 300 && response.status < 400) {
+        return res.status(508).send('Too many redirects');
+      }
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
