@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { create } from 'xmlbuilder2';
+import { domainToASCII } from 'url';
 import { TorrentRepository } from '../repositories/torrent.repository';
 import { TrackerRepository } from '../repositories/tracker.repository';
 import { TorznabSearchQuery, resolveTorznabCategory } from '../trackers/core';
@@ -526,11 +527,13 @@ export class TorznabController {
           throw new ProxyError(403, 'Forbidden target URL');
         }
 
-        const isAllowedRedirect = await this.isAllowedHost(redirectedUrl.hostname);
+        const normalizedRedirectHost = this.normalizeHostname(redirectedUrl.hostname);
+        const isAllowedRedirect = await this.isAllowedHost(normalizedRedirectHost);
         if (!isAllowedRedirect) {
           throw new ProxyError(403, 'Forbidden target host');
         }
 
+        redirectedUrl.hostname = normalizedRedirectHost;
         currentUrl = redirectedUrl.toString();
         continue;
       }
@@ -539,6 +542,11 @@ export class TorznabController {
     }
 
     throw new ProxyError(508, 'Too many redirects');
+  }
+
+  private normalizeHostname(hostname: string): string {
+    const ascii = domainToASCII(hostname.trim().replace(/\.$/, '').toLowerCase());
+    return ascii || hostname.trim().replace(/\.$/, '').toLowerCase();
   }
 
   private buildSafeUrl(parsed: URL): URL {
@@ -562,8 +570,9 @@ export class TorznabController {
       throw new ProxyError(400, 'Invalid path');
     }
 
+    const normalizedHost = this.normalizeHostname(parsed.hostname);
     const portString = hasPort ? `:${parsed.port}` : '';
-    const base = `${parsed.protocol}//${parsed.hostname}${portString}`;
+    const base = `${parsed.protocol}//${normalizedHost}${portString}`;
     const safeParsed = new URL(base);
     safeParsed.pathname = parsed.pathname;
     safeParsed.search = parsed.search;
@@ -585,7 +594,8 @@ export class TorznabController {
       }
 
       // SSRF protection
-      const isAllowed = await this.isAllowedHost(parsed.hostname);
+      const normalizedHost = this.normalizeHostname(parsed.hostname);
+      const isAllowed = await this.isAllowedHost(normalizedHost);
       if (!isAllowed) {
         return res.status(403).send('Forbidden target host');
       }
@@ -612,6 +622,7 @@ export class TorznabController {
         safeParsed = this.buildSafeUrl(parsed);
 
         // Re-check host on canonical form
+        safeParsed.hostname = this.normalizeHostname(safeParsed.hostname);
         const isAllowedCanonical = await this.isAllowedHost(safeParsed.hostname);
         if (!isAllowedCanonical) {
           throw new ProxyError(403, 'Forbidden target host');
