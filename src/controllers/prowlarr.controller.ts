@@ -20,6 +20,11 @@ export class ProwlarrController {
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
       throw new Error('Invalid protocol');
     }
+
+    if (parsed.username || parsed.password) {
+      throw new Error('Credentials in URL are not allowed');
+    }
+
     let cleanProwlarrUrl = parsed.origin + (parsed.pathname === '/' ? '' : parsed.pathname);
     if (cleanProwlarrUrl.endsWith('/')) {
       cleanProwlarrUrl = cleanProwlarrUrl.slice(0, -1);

@@ -466,6 +466,24 @@ export class TorznabController {
         return res.status(400).send('Invalid protocol');
       }
 
+      // SSRF protection: only allow downloads from configured tracker hosts
+      const trackers = await this.trackerRepo.getAllTrackers();
+      const allowedHosts = new Set(
+        trackers
+          .map((t) => {
+            try {
+              return new URL(t.url).hostname.toLowerCase();
+            } catch {
+              return null;
+            }
+          })
+          .filter((hostname): hostname is string => Boolean(hostname)),
+      );
+
+      if (!allowedHosts.has(parsed.hostname.toLowerCase())) {
+        return res.status(403).send('Forbidden target host');
+      }
+
       const response = await fetch(parsed, {
         headers: {
           'User-Agent':

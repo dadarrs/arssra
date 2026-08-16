@@ -164,7 +164,15 @@ describe('TorznabController', () => {
       expect(res.text).toBe('Invalid protocol');
     });
 
+    it('should return 403 if target host is not a configured tracker (SSRF protection)', async () => {
+      mockGetAllTrackers.mockResolvedValue([{ id: 1, url: 'http://tracker.com' }]);
+      const res = await request(app).get('/api/download?url=http://malicious.com/file.torrent');
+      expect(res.status).toBe(403);
+      expect(res.text).toBe('Forbidden target host');
+    });
+
     it('should proxy successful download and forward headers', async () => {
+      mockGetAllTrackers.mockResolvedValue([{ id: 1, url: 'http://tracker.com' }]);
       const mockBuffer = new ArrayBuffer(8);
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
@@ -206,6 +214,7 @@ describe('TorznabController', () => {
     });
 
     it('should handle fetch errors gracefully', async () => {
+      mockGetAllTrackers.mockResolvedValue([{ id: 1, url: 'http://tracker.com' }]);
       global.fetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 404,
