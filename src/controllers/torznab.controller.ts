@@ -510,7 +510,23 @@ export class TorznabController {
         return res.status(403).send('Forbidden target host');
       }
 
-      const response = await fetch(parsed, {
+      // Canonicalize/sanitize URL to avoid passing raw user input to fetch.
+      // Keep only protocol, host, optional numeric port, path and query.
+      const hasPort = parsed.port !== '';
+      if (hasPort && !/^\d+$/.test(parsed.port)) {
+        return res.status(400).send('Invalid port');
+      }
+      const safeUrl = `${parsed.protocol}//${parsed.hostname}${hasPort ? `:${parsed.port}` : ''}${parsed.pathname}${parsed.search}`;
+      const safeParsed = new URL(safeUrl);
+
+      // Re-check host on canonical form
+      const isAllowedCanonical = await this.isAllowedHost(safeParsed.hostname);
+      if (!isAllowedCanonical) {
+        return res.status(403).send('Forbidden target host');
+      }
+
+      const response = await fetch(safeUrl, {
+        redirect: 'manual',
         headers: {
           'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
