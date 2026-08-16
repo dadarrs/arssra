@@ -182,7 +182,7 @@ describe('TorznabController', () => {
       expect(res.headers['content-type']).toBe('application/x-bittorrent');
       expect(res.headers['content-disposition']).toBe('attachment; filename="test.torrent"');
       expect(global.fetch).toHaveBeenCalledWith(
-        'http://tracker.com/file.torrent',
+        new URL('http://tracker.com/file.torrent'),
         expect.any(Object),
       );
     });

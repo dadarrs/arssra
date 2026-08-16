@@ -27,6 +27,7 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import path from 'node:path';
 import { configureRoutes } from './routes/api.routes';
 import { RssService } from './services/rss.service';
@@ -38,6 +39,7 @@ class App {
 
   constructor() {
     this.app = express();
+    this.app.set('trust proxy', 1); // Respect X-Forwarded-* headers for rate limiting
     this.app.use(express.json()); // enable JSON body parsing
     this.port = process.env.PORT || 3232;
     this.rssService = new RssService();
@@ -52,8 +54,16 @@ class App {
     const frontendPath = path.join(__dirname, '../frontend/dist/frontend/browser');
     this.app.use(express.static(frontendPath));
 
+    // Apply rate limiting to the fallback route
+    const fallbackLimiter = rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 100, // Limit each IP to 100 requests per `window`
+      message:
+        'Too many requests for the frontend fallback from this IP, please try again after 15 minutes',
+    });
+
     // Fallback for Angular routing
-    this.app.use((_req, res) => {
+    this.app.use(fallbackLimiter, (_req, res) => {
       res.sendFile(path.join(frontendPath, 'index.html'));
     });
   }
