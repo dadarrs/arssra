@@ -453,6 +453,44 @@ export class TorznabController {
     });
   }
 
+  private async isAllowedHost(hostname: string): Promise<boolean> {
+    const trackers = await this.trackerRepo.getAllTrackers();
+    const allowedHosts = new Set(
+      trackers
+        .map((t) => {
+          try {
+            return new URL(t.url).hostname.toLowerCase();
+          } catch {
+            return null;
+          }
+        })
+        .filter((h): h is string => Boolean(h)),
+    );
+    return allowedHosts.has(hostname.toLowerCase());
+  }
+
+  private async handleProxyAuthError(hostname: string, status: number) {
+    if (status !== 401 && status !== 403) return;
+    try {
+      const trackers = await this.trackerRepo.getAllTrackers();
+      const matchingTracker = trackers.find((t) => {
+        try {
+          return new URL(t.url).hostname === hostname;
+        } catch {
+          return false;
+        }
+      });
+      if (matchingTracker) {
+        await this.trackerRepo.updateApiError(
+          matchingTracker.id,
+          'Auth key expired (download failed) - update RSS URL',
+        );
+      }
+    } catch (e) {
+      console.error('Failed to log proxy auth error', e);
+    }
+  }
+
   public async proxyDownload(req: Request, res: Response) {
     const targetUrl = req.query.url as string;
     if (!targetUrl) {
@@ -466,21 +504,9 @@ export class TorznabController {
         return res.status(400).send('Invalid protocol');
       }
 
-      // SSRF protection: only allow downloads from configured tracker hosts
-      const trackers = await this.trackerRepo.getAllTrackers();
-      const allowedHosts = new Set(
-        trackers
-          .map((t) => {
-            try {
-              return new URL(t.url).hostname.toLowerCase();
-            } catch {
-              return null;
-            }
-          })
-          .filter((hostname): hostname is string => Boolean(hostname)),
-      );
-
-      if (!allowedHosts.has(parsed.hostname.toLowerCase())) {
+      // SSRF protection
+      const isAllowed = await this.isAllowedHost(parsed.hostname);
+      if (!isAllowed) {
         return res.status(403).send('Forbidden target host');
       }
 
@@ -503,26 +529,7 @@ export class TorznabController {
       });
 
       if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          try {
-            const trackers = await this.trackerRepo.getAllTrackers();
-            const matchingTracker = trackers.find((t) => {
-              try {
-                return new URL(t.url).hostname === parsed.hostname;
-              } catch {
-                return false;
-              }
-            });
-            if (matchingTracker) {
-              await this.trackerRepo.updateApiError(
-                matchingTracker.id,
-                'Auth key expired (download failed) - update RSS URL',
-              );
-            }
-          } catch (e) {
-            console.error('Failed to log proxy auth error', e);
-          }
-        }
+        await this.handleProxyAuthError(parsed.hostname, response.status);
         return res.status(response.status).send(`Error fetching torrent: ${response.statusText}`);
       }
 
