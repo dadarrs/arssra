@@ -1,9 +1,20 @@
 import { Request, Response } from 'express';
 import { create } from 'xmlbuilder2';
+import { domainToASCII } from 'url';
 import { TorrentRepository } from '../repositories/torrent.repository';
 import { TrackerRepository } from '../repositories/tracker.repository';
 import { TorznabSearchQuery, resolveTorznabCategory } from '../trackers/core';
 import { TRACKERS } from '../trackers/definitions';
+
+class ProxyError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ProxyError';
+  }
+}
 
 export class TorznabController {
   private readonly repository: TorrentRepository;
@@ -261,8 +272,48 @@ export class TorznabController {
       const cooldownUntil = new Date(Date.now() + seconds * 1000);
       console.log(`Setting API cooldown for ${tracker.name} until ${cooldownUntil}`);
       await this.trackerRepo.setApiCooldown(tracker.id, cooldownUntil);
+    } else if (e.message === 'AUTH_EXPIRED') {
+      console.warn(`Auth key expired for ${tracker.name}`);
+      await this.trackerRepo.updateApiError(tracker.id, 'Auth key expired - update RSS URL');
     } else {
       console.error(`API search failed for ${tracker.name}`, e);
+      await this.trackerRepo.updateApiError(tracker.id, `API Error: ${e.message}`);
+    }
+  }
+
+  private async processTrackerApiSearch(
+    tracker: any,
+    searchQuery: TorznabSearchQuery,
+  ): Promise<any[]> {
+    if (!tracker.allowApi) return [];
+
+    if (tracker.apiCooldownUntil && new Date() < tracker.apiCooldownUntil) {
+      console.log(
+        `Skipping API search for ${tracker.name} due to active cooldown until ${tracker.apiCooldownUntil}`,
+      );
+      return [];
+    }
+
+    const def = TRACKERS.find((d) => d.name === tracker.name);
+    if (!def?.parser?.apiSearch) return [];
+
+    try {
+      const apiItems = await def.parser.apiSearch(searchQuery, tracker.url);
+      let apiAdded = 0;
+      const results: any[] = [];
+
+      for (const item of apiItems) {
+        const added = await this.processApiItem(item, def);
+        if (added) apiAdded++;
+        results.push(item);
+      }
+
+      const searchTerm = searchQuery.q || searchQuery.imdbid || 'recent';
+      await this.trackerRepo.updateApiStatus(tracker.id, apiAdded, searchTerm);
+      return results;
+    } catch (e: any) {
+      await this.handleApiSearchError(e, tracker);
+      return [];
     }
   }
 
@@ -272,41 +323,14 @@ export class TorznabController {
   ): Promise<any[]> {
     const remoteResults: any[] = [];
     for (const tracker of activeTrackers) {
-      if (!tracker.allowApi) continue;
-
-      if (tracker.apiCooldownUntil && new Date() < tracker.apiCooldownUntil) {
-        console.log(
-          `Skipping API search for ${tracker.name} due to active cooldown until ${tracker.apiCooldownUntil}`,
-        );
-        continue;
-      }
-
-      const def = TRACKERS.find((d) => d.name === tracker.name);
-      if (def?.parser?.apiSearch) {
-        try {
-          const apiItems = await def.parser.apiSearch(searchQuery, tracker.url);
-          let apiAdded = 0;
-          for (const item of apiItems) {
-            const added = await this.processApiItem(item, def);
-            if (added) apiAdded++;
-            remoteResults.push(item);
-          }
-          const searchTerm = searchQuery.q || searchQuery.imdbid || 'recent';
-          await this.trackerRepo.updateApiStatus(tracker.id, apiAdded, searchTerm);
-        } catch (e: any) {
-          await this.handleApiSearchError(e, tracker);
-        }
-      }
+      const results = await this.processTrackerApiSearch(tracker, searchQuery);
+      remoteResults.push(...results);
     }
     return remoteResults;
   }
 
   private async getTorznabItems(
-    q: string | undefined,
-    imdbid: string | undefined,
-    season: string | undefined,
-    ep: string | undefined,
-    categories: string[] | undefined,
+    searchQuery: TorznabSearchQuery,
     parsedLimit: number,
     parsedOffset: number,
     isSearchQuery: boolean,
@@ -317,23 +341,20 @@ export class TorznabController {
 
     if (isSearchQuery && hasSearchTerm) {
       items = await this.repository.searchTorrents(
-        q,
-        imdbid,
+        searchQuery.q,
+        searchQuery.imdbid,
         parsedLimit,
         parsedOffset,
-        categories,
+        searchQuery.categories,
       );
-      totalCount = await this.repository.countSearchTorrents(q, imdbid, categories);
+      totalCount = await this.repository.countSearchTorrents(
+        searchQuery.q,
+        searchQuery.imdbid,
+        searchQuery.categories,
+      );
 
       const trackers = await this.trackerRepo.getAllTrackers();
       const activeTrackers = trackers.filter((tr) => tr.active);
-      const searchQuery: TorznabSearchQuery = {
-        q,
-        imdbid,
-        season,
-        ep,
-        categories,
-      };
 
       const remoteResults = await this.performApiSearch(searchQuery, activeTrackers);
 
@@ -349,8 +370,8 @@ export class TorznabController {
       }
       totalCount += newlyAddedCount;
     } else {
-      items = await this.repository.getTorrents(parsedLimit, parsedOffset, categories);
-      totalCount = await this.repository.countTorrents(categories);
+      items = await this.repository.getTorrents(parsedLimit, parsedOffset, searchQuery.categories);
+      totalCount = await this.repository.countTorrents(searchQuery.categories);
     }
     return { items, totalCount };
   }
@@ -369,12 +390,16 @@ export class TorznabController {
     const isSearchQuery = t === 'search' || t === 'tvsearch' || t === 'movie' || (!t && !!q);
     const hasSearchTerm = (q as string) || (req.query.imdbid as string);
 
-    const { items, totalCount } = await this.getTorznabItems(
-      q as string | undefined,
-      req.query.imdbid as string | undefined,
-      req.query.season as string | undefined,
-      req.query.ep as string | undefined,
+    const searchQuery: TorznabSearchQuery = {
+      q: q as string | undefined,
+      imdbid: req.query.imdbid as string | undefined,
+      season: req.query.season as string | undefined,
+      ep: req.query.ep as string | undefined,
       categories,
+    };
+
+    const { items, totalCount } = await this.getTorznabItems(
+      searchQuery,
       parsedLimit,
       parsedOffset,
       isSearchQuery,
@@ -439,6 +464,122 @@ export class TorznabController {
     });
   }
 
+  private async isAllowedHost(hostname: string): Promise<boolean> {
+    const trackers = await this.trackerRepo.getAllTrackers();
+    const allowedHosts = new Set(
+      trackers
+        .map((t) => {
+          try {
+            return new URL(t.url).hostname.toLowerCase();
+          } catch {
+            return null;
+          }
+        })
+        .filter((h): h is string => Boolean(h)),
+    );
+    return allowedHosts.has(hostname.toLowerCase());
+  }
+
+  private async handleProxyAuthError(hostname: string, status: number) {
+    if (status !== 401 && status !== 403) return;
+    try {
+      const trackers = await this.trackerRepo.getAllTrackers();
+      const matchingTracker = trackers.find((t) => {
+        try {
+          return new URL(t.url).hostname === hostname;
+        } catch {
+          return false;
+        }
+      });
+      if (matchingTracker) {
+        await this.trackerRepo.updateApiError(
+          matchingTracker.id,
+          'Auth key expired (download failed) - update RSS URL',
+        );
+      }
+    } catch (e) {
+      console.error('Failed to log proxy auth error', e);
+    }
+  }
+
+  private async fetchWithManualRedirects(
+    initialUrl: string,
+    requestHeaders: any,
+  ): Promise<globalThis.Response> {
+    let currentUrl = initialUrl;
+    const maxRedirects = 5;
+
+    for (let i = 0; i <= maxRedirects; i++) {
+      const response = await fetch(currentUrl, {
+        headers: requestHeaders,
+        redirect: 'manual',
+      });
+
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get('location');
+        if (!location) {
+          throw new ProxyError(502, 'Invalid redirect response from upstream');
+        }
+
+        const redirectedUrl = new URL(location, currentUrl);
+
+        if (redirectedUrl.protocol !== 'http:' && redirectedUrl.protocol !== 'https:') {
+          throw new ProxyError(403, 'Forbidden target URL');
+        }
+
+        const normalizedRedirectHost = this.normalizeHostname(redirectedUrl.hostname);
+        const isAllowedRedirect = await this.isAllowedHost(normalizedRedirectHost);
+        if (!isAllowedRedirect) {
+          throw new ProxyError(403, 'Forbidden target host');
+        }
+
+        redirectedUrl.hostname = normalizedRedirectHost;
+        currentUrl = redirectedUrl.toString();
+        continue;
+      }
+
+      return response;
+    }
+
+    throw new ProxyError(508, 'Too many redirects');
+  }
+
+  private normalizeHostname(hostname: string): string {
+    const ascii = domainToASCII(hostname.trim().replace(/\.$/, '').toLowerCase());
+    return ascii || hostname.trim().replace(/\.$/, '').toLowerCase();
+  }
+
+  private buildSafeUrl(parsed: URL): URL {
+    const hasPort = parsed.port !== '';
+    if (hasPort && !/^\d+$/.test(parsed.port)) {
+      throw new ProxyError(400, 'Invalid port');
+    }
+
+    if (parsed.username || parsed.password) {
+      throw new ProxyError(400, 'Invalid target URL');
+    }
+
+    const decodedPathname = decodeURIComponent(parsed.pathname);
+    if (
+      decodedPathname.includes('..') ||
+      parsed.pathname.includes('%2f') ||
+      parsed.pathname.includes('%2F') ||
+      parsed.pathname.includes('%5c') ||
+      parsed.pathname.includes('%5C')
+    ) {
+      throw new ProxyError(400, 'Invalid path');
+    }
+
+    const normalizedHost = this.normalizeHostname(parsed.hostname);
+    const portString = hasPort ? `:${parsed.port}` : '';
+    const base = `${parsed.protocol}//${normalizedHost}${portString}`;
+    const safeParsed = new URL(base);
+    safeParsed.pathname = parsed.pathname;
+    safeParsed.search = parsed.search;
+
+    return safeParsed;
+  }
+
   public async proxyDownload(req: Request, res: Response) {
     const targetUrl = req.query.url as string;
     if (!targetUrl) {
@@ -452,25 +593,51 @@ export class TorznabController {
         return res.status(400).send('Invalid protocol');
       }
 
-      const response = await fetch(targetUrl, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          Accept:
-            'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-          'Sec-Ch-Ua-Mobile': '?0',
-          'Sec-Ch-Ua-Platform': '"Windows"',
-          'Sec-Fetch-Dest': 'document',
-          'Sec-Fetch-Mode': 'navigate',
-          'Sec-Fetch-Site': 'none',
-          'Sec-Fetch-User': '?1',
-          'Upgrade-Insecure-Requests': '1',
-        },
-      });
+      // SSRF protection
+      const normalizedHost = this.normalizeHostname(parsed.hostname);
+      const isAllowed = await this.isAllowedHost(normalizedHost);
+      if (!isAllowed) {
+        return res.status(403).send('Forbidden target host');
+      }
+
+      const requestHeaders = {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept:
+          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
+      };
+
+      let response: globalThis.Response;
+      let safeParsed: URL;
+      try {
+        safeParsed = this.buildSafeUrl(parsed);
+
+        // Re-check host on canonical form
+        safeParsed.hostname = this.normalizeHostname(safeParsed.hostname);
+        const isAllowedCanonical = await this.isAllowedHost(safeParsed.hostname);
+        if (!isAllowedCanonical) {
+          throw new ProxyError(403, 'Forbidden target host');
+        }
+
+        response = await this.fetchWithManualRedirects(safeParsed.toString(), requestHeaders);
+      } catch (err: any) {
+        if (err instanceof ProxyError) {
+          return res.status(err.status).send(err.message);
+        }
+        throw err;
+      }
 
       if (!response.ok) {
+        await this.handleProxyAuthError(safeParsed.hostname, response.status);
         return res.status(response.status).send(`Error fetching torrent: ${response.statusText}`);
       }
 

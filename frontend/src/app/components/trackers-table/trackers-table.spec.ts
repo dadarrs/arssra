@@ -82,4 +82,30 @@ describe('TrackersTable', () => {
     const noCooldownTracker = { apiCooldownUntil: null };
     expect(component.isCooldownActive(noCooldownTracker)).toBe(false);
   });
+
+  it('should render warning state when lastStatus is Success and lastApiError exists', () => {
+    mockApiService.getTrackers.mockReturnValue(of([{ 
+      id: 1, name: 'Tracker A', active: true, 
+      lastStatus: 'Success', lastApiError: 'Auth key expired'
+    }]));
+    component.fetchTrackers();
+    fixture.detectChanges();
+    
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.innerHTML).toContain('Warning');
+    expect(compiled.innerHTML).toContain('status-warning-text');
+  });
+
+  it('should render warning state when lastStatus is pending and lastApiError exists', () => {
+    mockApiService.getTrackers.mockReturnValue(of([{ 
+      id: 1, name: 'Tracker A', active: true, 
+      lastStatus: null, lastApiError: 'Pending error'
+    }]));
+    component.fetchTrackers();
+    fixture.detectChanges();
+    
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.innerHTML).toContain('Warning');
+    expect(compiled.innerHTML).toContain('status-warning-text');
+  });
 });

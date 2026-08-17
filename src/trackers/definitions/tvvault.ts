@@ -16,6 +16,9 @@ function buildTvVaultSearchParams(query: TorznabSearchQuery, authkey: string): s
 function handleTvVaultApiError(errorObj: any) {
   const errorMsg = errorObj['#'] || errorObj;
   console.error(`TV Vault API Error:`, errorMsg);
+
+  const msgLower = String(errorMsg).toLowerCase();
+
   const match = new RegExp(/wait at least (\d+)s|once every (\d+)s/).exec(String(errorMsg));
   if (match) {
     const seconds = Number.parseInt(match[1] || match[2], 10);
@@ -23,6 +26,12 @@ function handleTvVaultApiError(errorObj: any) {
       throw new Error(`COOLDOWN:${seconds}`);
     }
   }
+
+  if (msgLower.includes('auth') || msgLower.includes('key') || msgLower.includes('login')) {
+    throw new Error('AUTH_EXPIRED');
+  }
+
+  throw new Error(String(errorMsg));
 }
 
 function extractXmlValue(val: any): string {
@@ -192,12 +201,13 @@ export const tvvaultTracker: TrackerDefinition = {
         if (!searchParams) return [];
 
         const res = await fetch(`https://tv-vault.me/xmlsearch.php?${searchParams}`);
-        if (!res.ok) return [];
+        if (res.status === 401 || res.status === 403) throw new Error('AUTH_EXPIRED');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const xml = await res.text();
         return parseTvVaultApiResponse(xml, query);
       } catch (e: any) {
-        if (e.message?.startsWith('COOLDOWN:')) {
+        if (e.message?.startsWith('COOLDOWN:') || e.message === 'AUTH_EXPIRED') {
           throw e;
         }
         console.error('TV Vault API search failed', e);

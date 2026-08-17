@@ -1,6 +1,6 @@
 {
   "name": "arssra",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Automated RSS to Torznab",
   "main": "dist/index.js",
   "scripts": {
@@ -36,6 +36,7 @@
     "@prisma/client": "^5.22.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.6.2",
     "node-cron": "^4.6.0",
     "rss-parser": "^3.13.0",
     "xmlbuilder2": "^4.0.3"
@@ -43,28 +44,29 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/express": "^5.0.6",
-    "@types/node": "^26.1.2",
+    "@types/node": "^26.2.0",
     "@types/node-cron": "^3.0.11",
-    "@types/supertest": "^7.2.0",
+    "@types/supertest": "^7.2.1",
     "@vitest/coverage-v8": "^4.1.10",
-    "eslint": "^10.8.0",
+    "eslint": "^10.8.1",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-security": "^4.0.1",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
     "nodemon": "^3.1.14",
     "prettier": "^3.9.6",
     "prisma": "^5.22.0",
-    "puppeteer": "^25.3.0",
+    "puppeteer": "^25.5.0",
     "supertest": "^7.2.2",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.65.0",
+    "typescript-eslint": "^8.66.0",
     "vitest": "^4.1.10"
   },
   "allowScripts": {
     "@prisma/client@5.22.0": true,
     "@prisma/engines@5.22.0": true,
     "prisma@5.22.0": true,
-    "puppeteer@25.3.0": true
+    "puppeteer@25.5.0": true
   }
 }

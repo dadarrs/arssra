@@ -4,7 +4,30 @@ console.log = () => {};
 dotenv.config();
 console.log = _log;
 
+if (process.env.NODE_ENV !== 'test') {
+  const originalLog = console.log;
+  const originalInfo = console.info;
+  const originalWarn = console.warn;
+  const originalError = console.error;
+
+  const colors = {
+    reset: '\x1b[0m',
+    cyan: '\x1b[36m',
+    yellow: '\x1b[33m',
+    red: '\x1b[31m',
+    gray: '\x1b[90m',
+  };
+
+  const formatTime = (color: string) => `${color}[${new Date().toISOString()}]${colors.reset}`;
+
+  console.log = (...args) => originalLog(formatTime(colors.gray), ...args);
+  console.info = (...args) => originalInfo(formatTime(colors.cyan), ...args);
+  console.warn = (...args) => originalWarn(formatTime(colors.yellow), ...args);
+  console.error = (...args) => originalError(formatTime(colors.red), ...args);
+}
+
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import path from 'node:path';
 import { configureRoutes } from './routes/api.routes';
 import { RssService } from './services/rss.service';
@@ -16,6 +39,7 @@ class App {
 
   constructor() {
     this.app = express();
+    this.app.set('trust proxy', 1); // Respect X-Forwarded-* headers for rate limiting
     this.app.use(express.json()); // enable JSON body parsing
     this.port = process.env.PORT || 3232;
     this.rssService = new RssService();
@@ -30,8 +54,16 @@ class App {
     const frontendPath = path.join(__dirname, '../frontend/dist/frontend/browser');
     this.app.use(express.static(frontendPath));
 
+    // Apply rate limiting to the fallback route
+    const fallbackLimiter = rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 100, // Limit each IP to 100 requests per `window`
+      message:
+        'Too many requests for the frontend fallback from this IP, please try again after 15 minutes',
+    });
+
     // Fallback for Angular routing
-    this.app.use((_req, res) => {
+    this.app.use(fallbackLimiter, (_req, res) => {
       res.sendFile(path.join(frontendPath, 'index.html'));
     });
   }

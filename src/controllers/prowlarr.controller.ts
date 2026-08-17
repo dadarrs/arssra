@@ -20,6 +20,11 @@ export class ProwlarrController {
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
       throw new Error('Invalid protocol');
     }
+
+    if (parsed.username || parsed.password) {
+      throw new Error('Credentials in URL are not allowed');
+    }
+
     let cleanProwlarrUrl = parsed.origin + (parsed.pathname === '/' ? '' : parsed.pathname);
     if (cleanProwlarrUrl.endsWith('/')) {
       cleanProwlarrUrl = cleanProwlarrUrl.slice(0, -1);
@@ -57,7 +62,8 @@ export class ProwlarrController {
       const cleanArssraUrl = this.getCleanArssraUrl(arssraUrl);
 
       // 1. Fetch existing indexers to check if 'arssra' already exists
-      const getResponse = await fetch(`${cleanProwlarrUrl}/api/v1/indexer`, {
+      const getUrl = new URL(`${cleanProwlarrUrl}/api/v1/indexer`);
+      const getResponse = await fetch(getUrl, {
         headers: { 'X-Api-Key': prowlarrApiKey },
       });
 
@@ -87,7 +93,8 @@ export class ProwlarrController {
           });
         }
 
-        response = await fetch(`${cleanProwlarrUrl}/api/v1/indexer/${existingIndexer.id}`, {
+        const updateUrl = new URL(`${cleanProwlarrUrl}/api/v1/indexer/${existingIndexer.id}`);
+        response = await fetch(updateUrl, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -112,7 +119,8 @@ export class ProwlarrController {
           tags: [],
         };
 
-        response = await fetch(`${cleanProwlarrUrl}/api/v1/indexer`, {
+        const createUrl = new URL(`${cleanProwlarrUrl}/api/v1/indexer`);
+        response = await fetch(createUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

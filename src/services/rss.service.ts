@@ -76,8 +76,7 @@ export class RssService {
     }
 
     try {
-      const initialCount = await this.torrentRepo.countTorrents();
-      await this.torrentRepo.upsertTorrent({
+      const isNew = await this.torrentRepo.upsertTorrent({
         title: item.title || 'Unknown Title',
         guid: guid,
         link: item.link || '',
@@ -92,8 +91,7 @@ export class RssService {
         comments: item.comments || null,
       });
 
-      const newCount = await this.torrentRepo.countTorrents();
-      return newCount > initialCount;
+      return isNew;
     } catch (err: any) {
       console.error(`[${trackerName}] Error inserting torrent ${guid}:`, err.message);
       return false;

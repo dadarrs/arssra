@@ -4,6 +4,7 @@ import { TrackerRepository } from './tracker.repository';
 // Mock the prisma client
 const mocks = vi.hoisted(() => ({
   mockFindMany: vi.fn(),
+  mockFindUnique: vi.fn(),
   mockCreate: vi.fn(),
   mockUpdate: vi.fn(),
   mockDelete: vi.fn(),
@@ -14,6 +15,7 @@ vi.mock('../config/db.config', () => {
     default: {
       tracker: {
         findMany: mocks.mockFindMany,
+        findUnique: mocks.mockFindUnique,
         create: mocks.mockCreate,
         update: mocks.mockUpdate,
         delete: mocks.mockDelete,
@@ -60,19 +62,34 @@ describe('TrackerRepository', () => {
 
   it('updateTracker should partially update tracker fields', async () => {
     mocks.mockUpdate.mockResolvedValue({ id: 1, url: 'http://new' });
+    mocks.mockFindUnique.mockResolvedValue({ id: 1, url: 'http://old' });
 
     // Only updating URL
     await repo.updateTracker(1, 'http://new');
     expect(mocks.mockUpdate).toHaveBeenCalledWith({
       where: { id: 1 },
-      data: { url: 'http://new' },
+      data: {
+        url: 'http://new',
+        lastError: null,
+        lastApiError: null,
+        apiCooldownUntil: null,
+        lastStatus: null,
+      },
     });
 
     // Updating all fields
     await repo.updateTracker(1, 'http://new', '0 * * * *', 'NewName');
     expect(mocks.mockUpdate).toHaveBeenCalledWith({
       where: { id: 1 },
-      data: { url: 'http://new', cronSchedule: '0 * * * *', name: 'NewName' },
+      data: {
+        url: 'http://new',
+        lastError: null,
+        lastApiError: null,
+        apiCooldownUntil: null,
+        lastStatus: null,
+        cronSchedule: '0 * * * *',
+        name: 'NewName',
+      },
     });
   });
 
@@ -111,13 +128,13 @@ describe('TrackerRepository', () => {
     await repo.updateApiStatus(1, 10, 'search');
     expect(mocks.mockUpdate).toHaveBeenCalledWith({
       where: { id: 1 },
-      data: { lastApiAddedCount: 10, lastApiSearchTerm: 'search' },
+      data: { lastApiAddedCount: 10, lastApiSearchTerm: 'search', lastApiError: null },
     });
 
     await repo.updateApiStatus(1, 0);
     expect(mocks.mockUpdate).toHaveBeenCalledWith({
       where: { id: 1 },
-      data: { lastApiAddedCount: 0 },
+      data: { lastApiAddedCount: 0, lastApiError: null },
     });
   });
 });

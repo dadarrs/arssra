@@ -54,10 +54,17 @@
       <mat-header-cell *matHeaderCellDef mat-sort-header> Status </mat-header-cell>
       <mat-cell *matCellDef="let t">
         @if (t.lastStatus === 'Success') {
-        <span class="time-text status-success-text">
-          Success<br />
-          <small class="status-success-subtext">(added {{ t.lastAddedCount }})</small>
-        </span>
+          <div>
+            @if (t.lastApiError) {
+              <span class="time-text status-warning-text" [matTooltip]="'RSS sync succeeded but there are errors: ' + t.lastApiError">
+                Warning <mat-icon class="status-error-icon">warning</mat-icon>
+              </span>
+            } @else {
+              <span class="time-text status-success-text">Success</span>
+            }
+            <br />
+            <small class="status-success-subtext">(added {{ t.lastAddedCount }})</small>
+          </div>
         }
         @if (t.lastStatus === 'Failed') {
         <span class="time-text status-failed-text">Failed
@@ -67,7 +74,15 @@
         </span>
         }
         @if (!t.lastStatus) {
-        <span class="time-text status-pending-text">Pending</span>
+          <div>
+            @if (t.lastApiError) {
+              <span class="time-text status-warning-text" [matTooltip]="'Pending RSS sync but there are errors: ' + t.lastApiError">
+                Warning <mat-icon class="status-error-icon">warning</mat-icon>
+              </span>
+            } @else {
+              <span class="time-text status-pending-text">Pending</span>
+            }
+          </div>
         }
       </mat-cell>
     </ng-container>
@@ -81,15 +96,19 @@
               <span class="time-text status-failed-text" [matTooltip]="'Cooldown until ' + t.apiCooldownUntil">
                 Cooldown ({{ t.apiCooldownUntil | relativeTime }})
               </span>
+            } @else if (t.lastApiError) {
+              <span class="time-text status-failed-text" [matTooltip]="t.lastApiError">
+                Failed <mat-icon class="status-error-icon">info</mat-icon>
+              </span>
             } @else {
               <span class="time-text status-success-text">Ready</span>
             }
-            @if (t.lastApiAddedCount !== null && t.lastApiAddedCount !== undefined) {
+            @if (t.lastApiAddedCount !== null && t.lastApiAddedCount !== undefined && !t.lastApiError) {
               <br /><small class="status-success-subtext" [matTooltip]="t.lastApiSearchTerm ? 'Search term: ' + t.lastApiSearchTerm : ''">(added {{ t.lastApiAddedCount }})</small>
             }
           </div>
         } @else {
-          <span class="time-text" style="opacity: 0.5">-</span>
+          <span class="time-text status-disabled-text">-</span>
         }
       </mat-cell>
     </ng-container>
